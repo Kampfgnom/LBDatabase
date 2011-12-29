@@ -4,36 +4,57 @@ CONFIG += staticlib
 QT += sql
 DEFINES *= QT_USE_QSTRINGBUILDER
 INCLUDEPATH += $$PWD/include
+DESTDIR = $$PWD/../lib
 
 HEADERS += \
-    Core/taskscheduler.h \
-    Core/table.h \
-    Core/row.h \
-    Core/mappingattribute.h \
-    Core/listattribute.h \
-    Core/databaseattribute.h \
-    Core/database.h \
-    Core/attributevariant.h \
-    Core/attribute.h \
-    Core/singleton.h \
-    Gui/connectabletablewidgetitem.h \
-    Models/tablemodel.h \
+    old/taskscheduler.h \
+    old/table.h \
+    old/row.h \
+    old/mappingattribute.h \
+    old/listattribute.h \
+    old/databaseattribute.h \
+    old/database.h \
+    old/attribute.h \
+    old/singleton.h \
+    old/tablemodel.h \
+    old/relation.h \
+    old/attributeowner.h \
+    old/relationindex.h \
+    \
     LBDatabase.h \
-    Core/relation.h
+    database.h \
+    table.h \
+    singleton.h \
+    attribute.h \
+    row.h \
+    databaseattribute.h \
+    relation.h \
+    tablemetadata.h \
+    attributemetadata.h \
+    databaseattributemetadata.h
 
 SOURCES += \
-    Core/taskscheduler.cpp \
-    Core/table.cpp \
-    Core/row.cpp \
-    Core/mappingattribute.cpp \
-    Core/listattribute.cpp \
-    Core/databaseattribute.cpp \
-    Core/database.cpp \
-    Core/attributevariant.cpp \
-    Core/attribute.cpp \
-    Core/singleton.cpp \
-    Gui/connectabletablewidgetitem.cpp \
-    Models/tablemodel.cpp \
-    Core/relation.cpp
+    old/taskscheduler.cpp \
+    old/table.cpp \
+    old/row.cpp \
+    old/mappingattribute.cpp \
+    old/listattribute.cpp \
+    old/databaseattribute.cpp \
+    old/database.cpp \
+    old/attribute.cpp \
+    old/singleton.cpp \
+    old/tablemodel.cpp \
+    old/relation.cpp \
+    old/attributeowner.cpp \
+    old/relationindex.cpp \
+    \
+    database.cpp \
+    table.cpp \
+    attribute.cpp \
+    row.cpp \
+    databaseattribute.cpp \
+    relation.cpp \
+    tablemetadata.cpp \
+    attributemetadata.cpp \
+    databaseattributemetadata.cpp
 
-DESTDIR = $$PWD/../lib
