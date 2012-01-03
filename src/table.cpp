@@ -73,7 +73,7 @@ void TablePrivate::init()
 Column *TablePrivate::addColumn(const QString &name, const QString &sqlType, const QVariant &defaultValue)
 {
     Q_Q(Table);
-    if(q->columnNames().contains(name)) {
+    if(q->columnNames().contains(name, Qt::CaseInsensitive)) {
         qWarning() << "TablePrivate::addColumn: Duplicate column name" << name;
         return columnsByName.value(name);
     }
@@ -212,7 +212,7 @@ Row *TablePrivate::appendRow()
 
   \ingroup lowlevel-database-classes
 
-  It provides access and manipulation methods for most simple Tasks that you
+  It provides access and manipulation methods for most simple tasks that you
   can perform on tables. name() stores the name, database() the Database of the
   Table.
 
@@ -228,8 +228,8 @@ Row *TablePrivate::appendRow()
   addColumn(), removeColumn() and changeColumnName().
 
   In addition to that the Table class implements QAbstractTableModel and can
-  thus easily be added to tree and table views. The model additionally allows
-  editing of single fields.
+  thus easily be added to tree and table views. The model allows editing of
+  single fields.
 
   If you want to observe changes of the tables signature or content you may use
   Row::dataChanged() and Column::nameChanged().

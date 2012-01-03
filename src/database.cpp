@@ -253,12 +253,21 @@ bool Database::refreshConnection()
     return open();
 }
 
+/*!
+  Returns true if anything in the database has been changed since the creation
+  of the instance or the last time dirty has been set to false.
+  */
 bool Database::isDirty() const
 {
     Q_D(const Database);
     return d->dirty;
 }
 
+/*!
+  Sets the dirty state of this database to \a dirty.
+
+  Internally each class sets this state to true, each time anything is changed.
+  */
 void Database::setDirty(bool dirty)
 {
     Q_D(Database);
