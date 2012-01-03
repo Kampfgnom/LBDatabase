@@ -3,35 +3,34 @@
 
 #include <QAbstractTableModel>
 
-#include "databaseattributemetadata.h"
-
-#include <QMetaType>
-#include <QSqlQuery>
-
-#include <QDebug>
-
 namespace LBDatabase {
 
-class Attribute;
+class Column;
 class Database;
 class Row;
-class TableMetaData;
 
+class TablePrivate;
 class Table : public QAbstractTableModel
 {
     Q_OBJECT
-    Q_PROPERTY(QString name READ name)
 
 public:
+    ~Table();
+
     QString name() const;
     Database *database() const;
-    TableMetaData *metaData() const;
 
-    Row *rowById(int id) const;
+    Column *column(int column) const;
+    QList<Column *> columns() const;
+    QStringList columnNames() const;
 
-    Row *rowByModelIndex(const QModelIndex &index);
+    void changeColumnName(const QString &name, const QString &newName);
+    Column *addColumn(const QString &name, const QString &sqlType, const QVariant &defaultValue = QVariant());
+    void removeColumn(const QString &name);
 
-    void addDatabaseAttribute(const QString &name, const QString &displayName, DatabaseAttributeMetaData::SqlType type);
+    Row *appendRow();
+    Row *row(int id) const;
+    QList<Row *> rows() const;
 
     // QAbstractTableModel
     QVariant data(const QModelIndex &index, int role) const;
@@ -41,71 +40,20 @@ public:
     bool setData(const QModelIndex &index, const QVariant &value, int role);
     Qt::ItemFlags flags(const QModelIndex &index) const;
 
-    void removeDatabaseAttribute(const QString &name);
-
-protected slots:
-    void attributeMetaDataDisplayNameChanged();
-
 protected:
-    friend class Database;
-    friend class DatabaseAttributeMetaData;
-    friend class AttributeMetaData;
+    friend class DatabasePrivate;
 
-    Table();
+    void emitHeaderDataChanged(Qt::Orientation orientation, int first, int last);
+
     Table(const QString &name, Database *database);
-    void initWith(const QString &name, Database *database);
 
-    virtual Row* createRowInstance(int id, const QSqlQuery &query);
-
-    void changeColumnName(const QString &name, const QString &newName);
-
-    TableMetaData *m_metaData;
-
-    QHash<int, Row *> m_rowsById;
-    QList<Row *> m_rows;
-
-    Database *m_database;
-    QString m_name;
-};
-
-template<class TableClass>
-class lbQRegisterMetaTypeHelper
-{
-public:
-    lbQRegisterMetaTypeHelper(QString) // i have no idea, why this shouldnt work without the QString...
-    {
-        qRegisterMetaType<TableClass>();
-    }
+    TablePrivate * const d_ptr;
+    Q_DECLARE_PRIVATE(Table)
+    Q_DISABLE_COPY(Table)
 };
 
 } // namespace LBDatabase
 
-Q_DECLARE_METATYPE(LBDatabase::Table*)
-
-
-#define STRINGIZE(s) # s
-#define DATABASE
-#define LB_TABLE(classname) \
-    public: \
-    classname(); \
-    classname(::LBDatabase::Database*); \
-    classname(const classname &);
-
-#define LB_REGISTER_TABLE(classname) \
-    classname::classname(::LBDatabase::Database* database) : \
-    ::LBDatabase::Table(QLatin1String(STRINGIZE(classname) ""), \
-                        database) \
-    {} \
-    classname::classname() : \
-    ::LBDatabase::Table() \
-    {} \
-    classname::classname(const Companies &) : \
-    ::LBDatabase::Table(QLatin1String(STRINGIZE(classname) ""), \
-                        ::LBDatabase::Database::instance(QLatin1String(STRINGIZE(databaseName) ""))) \
-    { \
-    qWarning() << "You should never call the copy constructor of a table!"; \
-    } \
-    Q_DECLARE_METATYPE(classname) \
-    ::LBDatabase::lbQRegisterMetaTypeHelper<classname> _register_ ## classname(QLatin1String(STRINGIZE(databaseName) ""));
+Q_DECLARE_METATYPE(LBDatabase::Table *)
 
 #endif // LBDATABASE_TABLE_H

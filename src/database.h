@@ -1,58 +1,63 @@
 #ifndef LBDATABASE_DATABASE_H
 #define LBDATABASE_DATABASE_H
 
-#include <QHash>
-#include <QMap>
 #include <QObject>
-#include <QFile>
-#include <QSqlDatabase>
-#include <QList>
+
 #include <QMetaType>
+
+class QSqlDatabase;
+class QSqlQuery;
 
 namespace LBDatabase {
 
 class Table;
 
+bool checkSqlError(const QSqlQuery &query);
+
+class DatabasePrivate;
 class Database : public QObject
 {
     Q_OBJECT
-    Q_PROPERTY(QString name READ name)
-    Q_PROPERTY(QSqlDatabase sqlDatabase READ sqlDatabase)
-
 public:
-
     static QList<Database*> instances();
-    static Database *instance(const QString &name, const QString &fileName);
     static Database *instance(const QString &fileName);
 
     ~Database();
 
-    QString name() const;
-    QSqlDatabase sqlDatabase() const;
-    QString fileName() const;
+    bool open();
+    bool refreshConnection();
 
-    Table *table(const QString &name) const;
+    bool isDirty() const;
+
+    bool isOpen() const;
+    QString fileName() const;
+    QSqlDatabase sqlDatabase() const;
+
     QList<Table *> tables() const;
+    QStringList tableNames() const;
+    Table *table(const QString &name) const;
+    Table *createTable(const QString &name);
+
+public Q_SLOTS:
+    void setDirty(bool dirty);
+
+Q_SIGNALS:
+    void opened();
+    void closed();
+    void dirtyChanged(bool dirty);
 
 private:
-    explicit Database(const QString &name, const QString &fileName, QObject *parent);
+    explicit Database(const QString &fileName, QObject *parent);
 
-    void initialize();
+    void setOpen(bool open);
 
-    void createTableInstances();
-    Table *createTableInstace(const QString &name);
-
-    static QHash<QString, Database*> s_instances;
-
-    QString m_name;
-    QFile m_file;
-    QMap<QString, Table*> m_tables;
-
+    DatabasePrivate * const d_ptr;
+    Q_DECLARE_PRIVATE(Database)
     Q_DISABLE_COPY(Database)
 };
 
 } // namespace LBDatabase
 
-Q_DECLARE_METATYPE(LBDatabase::Database*)
+Q_DECLARE_METATYPE(LBDatabase::Database *)
 
 #endif // LBDATABASE_DATABASE_H

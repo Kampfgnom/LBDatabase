@@ -1,92 +1,161 @@
 #include "row.h"
 
-#include "attributemetadata.h"
-#include "databaseattribute.h"
+#include "column.h"
+#include "database.h"
 #include "table.h"
-#include "tablemetadata.h"
 
+#include <QSqlQuery>
 #include <QSqlRecord>
-
-#include <QVariant>
-#include <QDebug>
 
 namespace LBDatabase {
 
-Row::Row() :
-    QObject(),
-    m_id(0),
-    m_table(0)
-{
-}
+/******************************************************************************
+** RowPrivate
+*/
+class RowPrivate {
+private:
+    RowPrivate() :
+        id(0),
+        table(0)
+    {}
 
-Row::Row(const Row &other) :
-    QObject(other.parent()),
-    m_attributeByName(other.m_attributeByName),
-    m_databaseAttributes(other.m_databaseAttributes),
-    m_attributes(other.m_attributes),
-    m_calculator(other.m_calculator)
-{
-}
+    void initWith(const QSqlQuery &query);
 
-Row::Row(int id, Table *parent) :
-    QObject(parent),
-    m_id(id),
-    m_table(parent)
-{
-    initWith(id, parent);
-}
+    friend class Row;
+    int id;
+    Table *table;
+    QList<QVariant> values;
+};
 
-void Row::initWith(int id, Table *parent)
+void RowPrivate::initWith(const QSqlQuery &query)
 {
-    m_id = id;
-    m_table = parent;
+    int idIndex = query.record().indexOf(QLatin1String("id"));
+    Q_ASSERT_X(idIndex != -1, "RowPrivate::initWith", "The query has no field 'id'");
 
-    foreach(AttributeMetaData *metaData, m_table->metaData()->attributeMetaDatas()) {
-        metaData->createAttributeInstance(this);
+    id = query.value(idIndex).toInt();
+    Q_ASSERT_X(id > 0, "RowPrivate::initWith", "The id of this row is not valid");
+
+    values.reserve(query.record().count());
+    for(int i = 0; i < query.record().count(); ++i) {
+        values.append(query.value(i));
     }
 }
 
-const int &Row::id() const
+/******************************************************************************
+** Row
+*/
+/*!
+  \class Row
+
+  \brief The Row class represents a row in a Table.
+
+  \ingroup lowlevel-database-classes
+
+  There exists an instance of Row for each row in each table. You can use data()
+  and setData() to query an manipulate the content of fields.
+
+  You will seldomly instantiate this class on your own. Use the access and
+  creation methods of Table instead (i.e. Table::appendRow() and Table::row()).
+
+  \sa Table, Column
+  */
+
+/*!
+  \fn void Row::dataChanged(int column, QVariant data)
+
+  This signal is emitted whenever the content of the field in the Column at
+  index \a column changes.
+
+  The \a data parameter holds the new value.
+
+  \sa data() and setData().
+  */
+
+/*!
+  \var Row::d_ptr
+  \internal
+  */
+
+/*!
+  \internal
+
+  Constructs a new row from the contents in the current record of \a query in
+  the Table \a table.
+  */
+Row::Row(const QSqlQuery &query, Table *table) :
+    QObject(table),
+    d_ptr(new RowPrivate)
 {
-    return m_id;
+    Q_D(Row);
+    d->table = table;
+    d->initWith(query);
 }
 
-Table *Row::table() const
+/*!
+  Destroys the row.
+  */
+Row::~Row()
 {
-    return m_table;
+    Q_D(Row);
+    delete d;
 }
 
-const QList<Attribute *> Row::attributes() const
+/*!
+  Returns the content stored in the database in this row in the Column at index
+  \a column.
+  */
+QVariant Row::data(int column) const
 {
-    return m_attributes;
+    Q_D(const Row);
+    return d->values.at(column);
 }
 
-const QList<DatabaseAttribute*> Row::databaseAttributes() const
+/*!
+  Sets the content stored in the database in this row in the Column at index
+  \a column to \a data.
+  */
+void Row::setData(int column, const QVariant &data)
 {
-    return m_databaseAttributes;
+    Q_D(Row);
+    if(d->values.at(column) == data)
+        return;
+
+    d->values.replace(column, data);
+    QSqlQuery query(d->table->database()->sqlDatabase());
+    query.exec(QLatin1String("UPDATE ")+d->table->name()+
+               QLatin1String(" SET ")+d->table->column(column)->name()+QLatin1String(" = '")+data.toString()+
+               QLatin1String("' WHERE id = '")+QString::number(d->id)+QLatin1String("'"));
+    checkSqlError(query);
+    query.finish();
+    d->table->database()->setDirty(true);
+    emit dataChanged(column, data);
 }
 
-void Row::addDatabaseAttribute(DatabaseAttribute *attribute)
+/*!
+  \internal
+
+  Adds a column to the row.
+
+  \sa Table::addColumn()
+  */
+void Row::addColumn(const QString &name, const QVariant &value)
 {
-    addAttribute(attribute);
-    m_databaseAttributes.append(attribute);
+    Q_UNUSED(name)
+    Q_D(Row);
+    d->values.append(value);
 }
 
-Attribute *Row::attribute(const QString &name) const
-{
-    return m_attributeByName.value(name);
-}
+/*!
+  \internal
 
-void Row::addAttribute(Attribute *attribute)
-{
-    m_attributeByName.insert(attribute->name(),attribute);
-    m_attributes.append(attribute);
-}
+  Removes a column from the row.
 
-Calculator *Row::calculator() const
+  \sa Table::removeColumn()
+  */
+void Row::removeColumn(int column)
 {
-    return m_calculator;
+    Q_D(Row);
+    d->values.removeAt(column);
 }
-
 
 } // namespace LBDatabase

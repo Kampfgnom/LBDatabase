@@ -1,232 +1,431 @@
 #include "table.h"
 
-#include "attributemetadata.h"
+#include "column.h"
 #include "database.h"
-#include "databaseattribute.h"
-#include "databaseattributemetadata.h"
 #include "row.h"
-#include "tablemetadata.h"
 
-#include <QSqlRecord>
+#include <QDebug>
+#include <QSqlError>
 #include <QSqlField>
 #include <QSqlQuery>
-#include <QSqlError>
+#include <QSqlRecord>
+#include <QStringList>
 
 namespace LBDatabase {
 
-Table::Table() :
-    QAbstractTableModel(),
-    m_metaData(0),
-    m_rowsById(QHash<int, Row *>()),
-    m_rows(QList<Row *>()),
-    m_database(0),
-    m_name(QString())
+/******************************************************************************
+** TablePrivate
+*/
+class TablePrivate {
+private:
+    TablePrivate() :
+        q_ptr(0),
+        database(0)
+    {}
+
+    void init();
+
+    Column *addColumn(const QString &name, const QString &sqlType, const QVariant &defaultValue);
+    void removeColumn(const QString &name);
+    void changeColumnName(const QString &name, const QString &newName);
+    Row *appendRow();
+
+    Table *q_ptr;
+    Database *database;
+    QString name;
+
+    QHash<QString, Column *> columnsByName;
+    QList<Column *> columns;
+    QHash<int, Row *> rowsById;
+    QList<Row *> rows;
+
+    Q_DECLARE_PUBLIC(Table)
+};
+
+void TablePrivate::init()
 {
-}
-
-Table::Table(const QString &name, Database *database) :
-    QAbstractTableModel(database),
-    m_metaData(0),
-    m_rowsById(QHash<int, Row *>()),
-    m_rows(QList<Row *>()),
-    m_database(database),
-    m_name(name)
-{
-    initWith(name, database);
-}
-
-void Table::initWith(const QString &name, Database *database)
-{
-    m_name = name;
-    m_database = database;
-    setParent(database);
-
-    m_metaData = new TableMetaData(this);
-
-    foreach(DatabaseAttributeMetaData *d, m_metaData->databaseAttributeMetaDatas()) {
-        connect(d, SIGNAL(displayNameChanged()), this, SLOT(attributeMetaDataDisplayNameChanged()));
+    Q_Q(Table);
+    QSqlRecord columnNames = database->sqlDatabase().record(name);
+    columns.reserve(columnNames.count());
+    for(int i = 0; i < columnNames.count(); ++i) {
+        Column *column = new Column(columnNames.field(i), q);
+        columns.append(column);
+        columnsByName.insert(column->name(), column);
     }
 
-    QSqlQuery query(m_database->sqlDatabase());
-    query.exec(QLatin1String("SELECT * FROM ")+m_name);
-    QSqlRecord record = query.record();
-    int idIndex = record.indexOf(QLatin1String("id"));
-    QHash<AttributeMetaData *, int> attributeIds;
-    foreach(AttributeMetaData *d, m_metaData->databaseAttributeMetaDatas()) {
-        attributeIds.insert(d, record.indexOf(d->name()));
-    }
-
-    m_rowsById.reserve(query.size());
-    m_rows.reserve(query.size());
-
+    QSqlQuery query(database->sqlDatabase());
+    query.exec(QLatin1String("SELECT * FROM ")+name);
+    rows.reserve(query.size());
+    rowsById.reserve(query.size());
+    int idIndex = query.record().indexOf(QLatin1String("id"));
+    Q_ASSERT_X(idIndex != -1, "TablePrivate::init", "The table has no field 'id'");
     int id = 0;
     while(query.next()) {
         id = query.value(idIndex).toInt();
-        Row *row = createRowInstance(id, query);
-        foreach(DatabaseAttribute *databaseAttribute, row->databaseAttributes()) {
-            databaseAttribute->initWithValue(query.value(attributeIds.value(databaseAttribute->metaData())));
-        }
-
-        m_rowsById.insert(id, row);
-        m_rows.append(row);
+        Row *row = new Row(query, q_ptr);
+        rows.append(row);
+        rowsById.insert(id, row);
     }
+    checkSqlError(query);
     query.finish();
 }
 
-Row *Table::createRowInstance(int id, const QSqlQuery &query)
+Column *TablePrivate::addColumn(const QString &name, const QString &sqlType, const QVariant &defaultValue)
 {
-    int typeIndex = query.record().indexOf(QLatin1String("lbmeta_type"));
-    int metaTypeId = 0;
-    if(typeIndex > -1) {
-        QString name = query.value(typeIndex).toString();
-        metaTypeId = QMetaType::type(name.toUtf8().constData());
+    Q_Q(Table);
+    if(q->columnNames().contains(name)) {
+        qWarning() << "TablePrivate::addColumn: Duplicate column name" << name;
+        return columnsByName.value(name);
     }
 
-    if(!metaTypeId) {
-        return new Row(id, this);
+    QSqlQuery query(database->sqlDatabase());
+
+    QString queryString = QLatin1String("ALTER TABLE ")+this->name+QLatin1String(" ADD ")+name+
+            QLatin1String(" ")+sqlType;
+    if(!defaultValue.toString().isEmpty()) {
+        queryString += QLatin1String(" DEFAULT ")+defaultValue.toString();
     }
-    else {
-        QObject *object = static_cast<QObject*>(QMetaType::construct(metaTypeId));
-        Row *row = qobject_cast<Row*>(object);
-        if(row) {
-            row->initWith(id, this);
-            return row;
-        }
-        else {
-            delete object;
-            return new Row(id, this);
-        }
+    query.exec(queryString);
+    checkSqlError(query);
+    query.finish();
+
+    QSqlRecord record = database->sqlDatabase().record(this->name);
+    QSqlField columnField = record.field(record.indexOf(name));
+
+    q->beginInsertColumns(QModelIndex(),columns.count(), columns.count());
+    Column *column = new Column(columnField, q);
+    columns.append(column);
+    columnsByName.insert(name, column);
+    foreach(Row *row, rows) {
+        row->addColumn(name, defaultValue);
     }
+    q->endInsertColumns();
+    return column;
 }
 
+void TablePrivate::changeColumnName(const QString &name, const QString &newName)
+{
+    Q_Q(Table);
+    if(!q->columnNames().contains(name)) {
+        qWarning() << "TablePrivate::addColumn: No such column" << name;
+        return;
+    }
+    if(q->columnNames().contains(newName)) {
+        qWarning() << "TablePrivate::addColumn: Duplicate column name" << newName;
+        return;
+    }
+
+    QSqlQuery query(database->sqlDatabase());
+    query.exec(QLatin1String("SELECT sql FROM sqlite_master WHERE name = '")+this->name+QLatin1String("'"));
+    checkSqlError(query);
+    query.first();
+    QString sql = query.value(0).toString();
+    QString replacement = QLatin1String(" ")+newName+QLatin1String(" ");
+    QString search = QLatin1String(" ")+name+QLatin1String(" ");
+    sql = sql.replace(sql.lastIndexOf(search),search.length(),replacement);
+    query.exec(QLatin1String("PRAGMA writable_schema = 1;"));
+    checkSqlError(query);
+    query.exec(QLatin1String("UPDATE SQLITE_MASTER SET sql = '")+sql+
+               QLatin1String("' WHERE NAME = '")+this->name+QLatin1String("';"));
+    checkSqlError(query);
+    query.exec(QLatin1String("PRAGMA writable_schema = 0;"));
+    checkSqlError(query);
+    query.finish();
+    Column *column = columnsByName.value(name);
+    int index = columns.indexOf(column);
+    column->setName(newName);
+    database->refreshConnection();
+    q->emitHeaderDataChanged(Qt::Horizontal,index,index);
+}
+
+void TablePrivate::removeColumn(const QString &name)
+{
+    Q_Q(Table);
+    if(!q->columnNames().contains(name)) {
+        qWarning() << "TablePrivate::addColumn: No such column" << name;
+        return;
+    }
+    if(name == QLatin1String("id")) {
+        qWarning() << "TablePrivate::addColumn: You may not remove the column" << name;
+        return;
+    }
+
+    QSqlQuery query(database->sqlDatabase());
+    query.exec(QLatin1String("SELECT sql FROM sqlite_master WHERE name = '")+this->name+QLatin1String("'"));
+    checkSqlError(query);
+    query.first();
+    QString sql = query.value(0).toString();
+    QString search = QLatin1String(" ")+name+QLatin1String(" ");
+    int from = sql.lastIndexOf(search) - 1;
+    int to = sql.indexOf(',',from + 1);
+    if(to == -1) {
+        to = sql.indexOf(')',from);
+    }
+    sql = sql.remove(from,to - from);
+    query.exec(QLatin1String("PRAGMA writable_schema = 1;"));
+    checkSqlError(query);
+    query.exec(QLatin1String("UPDATE SQLITE_MASTER SET sql = '")+sql+
+               QLatin1String("' WHERE NAME = '")+this->name+QLatin1String("';"));
+    checkSqlError(query);
+    query.exec(QLatin1String("PRAGMA writable_schema = 0;"));
+    checkSqlError(query);
+    query.finish();
+    Column *column = columnsByName.value(name);
+    int index = columns.indexOf(column);
+    q->beginRemoveColumns(QModelIndex(), index, index);
+    foreach(Row *row, rows) {
+        row->removeColumn(index);
+    }
+    columns.removeAt(index);
+    columnsByName.remove(name);
+    column->deleteLater();
+    database->refreshConnection();
+    q->endRemoveColumns();
+}
+
+Row *TablePrivate::appendRow()
+{
+    QSqlQuery query(database->sqlDatabase());
+    query.exec(QLatin1String("INSERT INTO ")+name+QLatin1String(" DEFAULT VALUES"));
+    checkSqlError(query);
+    query.exec(QLatin1String("SELECT * FROM ")+name+QLatin1String(" WHERE id = '")+query.lastInsertId().toString()+QLatin1String("'"));
+    int id = query.lastInsertId().toInt();
+    query.first();
+    checkSqlError(query);
+    Q_Q(Table);
+    Row *row = new Row(query, q);
+    query.finish();
+    q->beginInsertRows(QModelIndex(),rows.size(), rows.size());
+    rows.append(row);
+    rowsById.insert(id, row);
+    q->endInsertRows();
+    return row;
+}
+
+/******************************************************************************
+** Table
+*/
+/*!
+  \class Table
+
+  \brief The Table class represents a table in a SQLite database.
+
+  \ingroup lowlevel-database-classes
+
+  It provides access and manipulation methods for most simple Tasks that you
+  can perform on tables. name() stores the name, database() the Database of the
+  Table.
+
+  You will seldomly instantiate this class on your own. Use the access and
+  creation methods of Database instead (i.e. Database::table(),
+  Database::tables() and Database::createTable()).
+
+  You can append a Row to the table with appendRow(), you can query the rows by
+  id with row() and access all rows().
+
+  Columns may be queried by index (column()) or you access all columns() and
+  all columnNames(). Manipulation of the table's signature is achieved through
+  addColumn(), removeColumn() and changeColumnName().
+
+  In addition to that the Table class implements QAbstractTableModel and can
+  thus easily be added to tree and table views. The model additionally allows
+  editing of single fields.
+
+  If you want to observe changes of the tables signature or content you may use
+  Row::dataChanged() and Column::nameChanged().
+
+  \sa Database, Column, Row
+  */
+
+/*!
+  \var Table::d_ptr
+  \internal
+  */
+
+/*!
+  Constructs a Table named \a name in the Database \a database.
+  */
+Table::Table(const QString &name, Database *database) :
+    QAbstractTableModel(database),
+    d_ptr(new TablePrivate)
+{
+    Q_D(Table);
+    d->q_ptr = this;
+    d->name = name;
+    d->database = database;
+    d->init();
+}
+
+/*!
+  Destroys the table.
+  */
+Table::~Table()
+{
+    Q_D(Table);
+    delete d;
+}
+
+/*!
+  \property Table::name
+  \brief holds the name of the table.
+
+  Note that you can not change the name of a table.
+  */
 QString Table::name() const
 {
-    return m_name;
+    Q_D(const Table);
+    return d->name;
 }
 
+/*!
+  Returns the database containing the table.
+  */
 Database *Table::database() const
 {
-    return m_database;
+    Q_D(const Table);
+    return d->database;
 }
 
-TableMetaData *Table::metaData() const
+/*!
+  Adds a column named \a name with the SQLite type \a sqlType and the default
+  value \a defaultValue to the table.
+
+  Returns the newly created Column. If the column already existed it returns the
+  corresponding Column instance and \a 0 if an error occurs.
+
+  \note \a sqlType should be but does not need to be a valid SQLite type.
+
+  \warning This is potentially dangerous as SQLite only supports a tiny subset
+  of the "ALTER TABLE" SQL command. This method uses a dirty workaround by
+  manipulating ther sqlite_master table directly.
+
+  \sa Column::typeNames()
+  */
+Column *Table::addColumn(const QString &name, const QString &sqlType, const QVariant &defaultValue)
 {
-    return m_metaData;
+    Q_D(Table);
+    Column *col = d->addColumn(name, sqlType, defaultValue);
+    database()->setDirty(true);
+    return col;
 }
 
-Row *Table::rowById(int id) const
+/*!
+  Removes the column named \a name from the table. Does nothing if no such
+  column exists.
+
+  \warning This is potentially dangerous as SQLite only supports a tiny subset
+  of the "ALTER TABLE" SQL command. This method uses a dirty workaround by
+  manipulating ther sqlite_master table directly.
+  */
+void Table::removeColumn(const QString &name)
 {
-    return m_rowsById.value(id);
+    Q_D(Table);
+    d->removeColumn(name);
+    database()->setDirty(true);
 }
 
-Row *Table::rowByModelIndex(const QModelIndex &index)
-{
-    return m_rows.at(index.row());
-}
+/*!
+  Changes the name of the column named \a name to \a newName. Does nothing if
+  \a name equals \a newName or if no column \a name exists.
 
+  \warning This is potentially dangerous as SQLite only supports a tiny subset
+  of the "ALTER TABLE" SQL command. This method uses a dirty workaround by
+  manipulating ther sqlite_master table directly.
+  */
 void Table::changeColumnName(const QString &name, const QString &newName)
 {
-    QSqlQuery query(m_database->sqlDatabase());
-    QString create = QLatin1String("CREATE TABLE ")+m_name+QLatin1String("_tmp AS SELECT ");
-    foreach(AttributeMetaData *attribute, m_metaData->attributeMetaDatas()) {
-        if(attribute->name() != name) {
-            create += attribute->name()+QLatin1String(",");
-        }
-    }
-    create += name+QLatin1String(" AS ")+newName+QLatin1String(" FROM ")+m_name+QLatin1String(";");
-
-    query.exec(QLatin1String("BEGIN TRANSACTION;"));
-    query.exec(create);
-    query.exec(QLatin1String("DROP TABLE ")+m_name);
-    query.exec(QLatin1String("ALTER TABLE ")+m_name+QLatin1String("_tmp RENAME TO ")+m_name);
-    query.exec(QLatin1String("COMMIT;"));
-    query.finish();
+    Q_D(Table);
+    if(name == newName)
+        return;
+    d->changeColumnName(name, newName);
+    database()->setDirty(true);
 }
 
-void Table::removeDatabaseAttribute(const QString &name)
+/*!
+  Returns the column with the index \a column. The indexes are sorted by the
+  first call to QSqlDatabase::record() and therefore not deterministically
+  sorted from execution to execution.
+  */
+Column *Table::column(int column) const
 {
-    DatabaseAttributeMetaData *metaData = static_cast<DatabaseAttributeMetaData *>(m_metaData->attributeMetaData(name));
-    beginRemoveColumns(QModelIndex(),
-                       m_metaData->m_attributeMetaDatas.indexOf(metaData),m_metaData->m_attributeMetaDatas.indexOf(metaData));
-    m_metaData->beginRemoveRows(QModelIndex(),
-                                m_metaData->m_attributeMetaDatas.indexOf(metaData),m_metaData->m_attributeMetaDatas.indexOf(metaData));
-    m_metaData->m_databaseAttributeMetaDatas.removeAll(metaData);
-    m_metaData->m_attributeMetaDatas.removeAll(metaData);
-    m_metaData->m_attributeMetaDataByName.remove(name);
-    foreach(Row *row, m_rows) {
-        Attribute *attribute = row->attribute(name);
-        row->m_attributes.removeAll(attribute);
-        row->m_databaseAttributes.removeAll(static_cast<DatabaseAttribute *>(attribute));
-        attribute->deleteLater();
-    }
-    m_metaData->endRemoveRows();
-
-    QSqlQuery query(m_database->sqlDatabase());
-    QString create = QLatin1String("CREATE TABLE ")+m_name+QLatin1String("_tmp AS SELECT ");
-    foreach(AttributeMetaData *attribute, m_metaData->attributeMetaDatas()) {
-        if(attribute->name() != name) {
-            create += attribute->name()+QLatin1String(",");
-        }
-    }
-    create.remove(create.lastIndexOf(','),1);
-    create += QLatin1String(" FROM ")+m_name+QLatin1String(";");
-
-    query.exec(QLatin1String("BEGIN TRANSACTION;"));
-    query.exec(create);
-    query.exec(QLatin1String("DROP TABLE ")+m_name);
-    query.exec(QLatin1String("ALTER TABLE ")+m_name+QLatin1String("_tmp RENAME TO ")+m_name);
-    query.exec(QLatin1String("DELETE FROM ")+m_name+QLatin1String("_lbmeta_attributes WHERE name = '")+name+QLatin1String("';"));
-    query.exec(QLatin1String("COMMIT;"));
-    query.finish();
-
-    endRemoveColumns();
-    metaData->deleteLater();
+    Q_D(const Table);
+    return d->columns.at(column);
 }
 
-void Table::addDatabaseAttribute(const QString &name, const QString &displayName, DatabaseAttributeMetaData::SqlType type)
+/*!
+  Returns a list of all columns in the table.
+  */
+QList<Column *> Table::columns() const
 {
-    QSqlQuery query(m_database->sqlDatabase());
-
-    query.exec(QLatin1String("ALTER TABLE ")+m_name+QLatin1String(" ADD ")+name+
-               QLatin1String(" ")+DatabaseAttributeMetaData::sqlTypeToName(type)+QLatin1String(";"));
-
-    query.exec(QLatin1String("INSERT INTO ")+m_name+
-               QLatin1String("_lbmeta_attributes (name, displayName, sqlType, type) VALUES ('")
-               +name+QLatin1String("','")
-               +displayName+QLatin1String("','")
-               +QString::number(type)+QLatin1String("','")
-               +QString::number(AttributeMetaData::DatabaseAttributeType)
-               +QLatin1String("');"));
-
-    query.exec(QLatin1String("SELECT * FROM ")+m_name+
-               QLatin1String("_lbmeta_attributes WHERE id = '")+query.lastInsertId().toString()+QLatin1String("';"));
-    query.first();
-
-    beginInsertColumns(QModelIndex(), m_metaData->attributeCount(), m_metaData->attributeCount());
-    AttributeMetaData *metaData = AttributeMetaData::createMetaDataInstance(query, this, this->metaData());
-    foreach(Row *row, m_rows) {
-        metaData->createAttributeInstance(row);
-    }
-    endInsertColumns();
-
-    query.finish();
+    Q_D(const Table);
+    return d->columns;
 }
 
+/*!
+  Returns a list of all column names in the table.
+  */
+QStringList Table::columnNames() const
+{
+    Q_D(const Table);
+    return d->columnsByName.keys();
+}
+
+/*!
+  Appends a new Row to the table.
+
+  The row will be populated with the default values of the SQLite table.
+
+  Returns the newly created row.
+  */
+Row *Table::appendRow()
+{
+    Q_D(Table);
+    Row *row = d->appendRow();
+    database()->setDirty(true);
+    return row;
+}
+
+/*!
+  Returns the row with the ID \a id or \a 0 if no such row exists.
+  */
+Row *Table::row(int id) const
+{
+    Q_D(const Table);
+    return d->rowsById.value(id, 0);
+}
+
+/*!
+  Returns a list of all rows in the table.
+  */
+QList<Row *> Table::rows() const
+{
+    Q_D(const Table);
+    return d->rows;
+}
+
+/*!
+  Implements QAbstractTableModel::data()
+  */
 QVariant Table::data(const QModelIndex &index, int role) const
 {
+    Q_D(const Table);
     if(role == Qt::DisplayRole || role == Qt::EditRole) {
-        Row *row = m_rows.at(index.row());
-        return row->attributes().at(index.column())->data();
+        Row *row = d->rows.at(index.row());
+        return row->data(index.column());
     }
 
     return QVariant();
 }
 
+/*!
+  Implements QAbstractTableModel::headerData()
+  */
 QVariant Table::headerData(int section, Qt::Orientation orientation, int role) const
 {
     if(orientation == Qt::Horizontal) {
         if(role == Qt::DisplayRole) {
-            return m_metaData->attributeMetaDatas().at(section)->displayName();
+            Q_D(const Table);
+            return d->columns.at(section)->name();
         }
         else if(role == Qt::TextAlignmentRole) {
             return Qt::AlignLeft;
@@ -235,53 +434,66 @@ QVariant Table::headerData(int section, Qt::Orientation orientation, int role) c
     return QVariant();
 }
 
+/*!
+  Implements QAbstractTableModel::columnCount()
+  */
 int Table::columnCount(const QModelIndex &parent) const
 {
-    if(parent.isValid() || !m_metaData) {
+    if(parent.isValid()) {
         return 0;
     }
-    return m_metaData->attributeCount();
+    Q_D(const Table);
+    return d->columns.count();
 }
 
+/*!
+  Implements QAbstractTableModel::rowCount()
+  */
 int Table::rowCount(const QModelIndex &parent) const
 {
     if(parent.isValid()) {
         return 0;
     }
-    return m_rows.size();
+    Q_D(const Table);
+    return d->rows.size();
 }
 
+/*!
+  Implements QAbstractTableModel::setData()
+  */
 bool Table::setData(const QModelIndex &index, const QVariant &value, int role)
 {
     if(role == Qt::EditRole) {
-        Row *row = m_rows.at(index.row());
-        Attribute *attribute = row->attributes().at(index.column());
-        if(attribute->isEditable()) {
-            attribute->setData(value);
-            return true;
-        }
+        Q_D(const Table);
+        Row *row = d->rows.at(index.row());
+        row->setData(index.column(), value);
+        return true;
     }
     return false;
 }
 
+/*!
+  Implements QAbstractTableModel::flags()
+  */
 Qt::ItemFlags Table::flags(const QModelIndex &index) const
 {
-    Row *row = m_rows.at(index.row());
-    Attribute *attribute = row->attributes().at(index.column());
-
-    Qt::ItemFlags defaultFlags = QAbstractItemModel::flags(index);
-    if(attribute->isEditable()) {
-        defaultFlags |= Qt::ItemIsEditable;
+    Q_D(const Table);
+    if(d->columns.at(index.column())->name() != QLatin1String("id")) {
+        return QAbstractItemModel::flags(index) | Qt::ItemIsEditable;
     }
 
-    return defaultFlags;
+    return QAbstractItemModel::flags(index);
 }
 
-void Table::attributeMetaDataDisplayNameChanged()
+/*!
+  \internal
+
+  Emits the QAbstractTableModel::headerDataChanged() signal if a column's name
+  changes.
+  */
+void Table::emitHeaderDataChanged(Qt::Orientation orientation, int first, int last)
 {
-    AttributeMetaData *metaData = static_cast<AttributeMetaData *>(sender());
-    int i = m_metaData->attributeMetaDatas().indexOf(metaData);
-    emit headerDataChanged(Qt::Horizontal,i,i);
+    emit headerDataChanged(orientation,first,last);
 }
 
 } // namespace LBDatabase
