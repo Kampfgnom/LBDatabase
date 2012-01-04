@@ -1,5 +1,6 @@
 #include "storage.h"
 
+#include "attribute.h"
 #include "context.h"
 #include "database.h"
 #include "entitytype.h"
@@ -13,13 +14,15 @@
 
 namespace LBDatabase {
 
-namespace {
-const QString EntitiesTableName("lbmeta_entitytypes");
-}
-
 /******************************************************************************
 ** StoragePrivate
 */
+namespace {
+const QString ContextsTableName("lbmeta_contexts");
+const QString EntitiesTableName("lbmeta_entitytypes");
+const QString AttributesTableName("lbmeta_attributes");
+}
+
 class StoragePrivate {
     static QHash<QString, Storage*> instances;
 
@@ -28,11 +31,19 @@ class StoragePrivate {
     void init();
     bool open();
 
+    Table *attributesTable;
+    Table *contextsTable;
+    Table *entitiesTable;
+
     QString fileName;
     Database *database;
 
-    Table *entitiesTable;
-    QHash<QString, Context *> contexts;
+    QHash<int, Context *> contexts;
+    QHash<QString, Context *> contextsByName;
+
+    QHash<int, EntityType *> entityTypes;
+
+    QHash<int, Attribute *> attributes;
 
     Storage * q_ptr;
     Q_DECLARE_PUBLIC(Storage)
@@ -59,26 +70,36 @@ bool StoragePrivate::open()
     if(!database->open())
         return false;
 
+    contextsTable = database->table(ContextsTableName);
+    if(!contextsTable)
+        return false;
+
     entitiesTable = database->table(EntitiesTableName);
     if(!entitiesTable)
         return false;
 
-    foreach(Row *row, entitiesTable->rows()) {
-        QString contextName = row->data(QLatin1String("context")).toString();
-        if(!contexts.contains(contextName)) {
-            contexts.insert(contextName, new Context(contextName, q));
-        }
+    attributesTable = database->table(AttributesTableName);
+    if(!attributesTable)
+        return false;
 
-        Context *context = contexts.value(contextName);
-
-        EntityType *type = new EntityType(context);
-        type->setName(row->data(QLatin1String("name")).toString());
-        type->setParentEntityTypeName(row->data(QLatin1String("parentEntityType")).toString());
-        context->addEntityType(type);
+    foreach(Row *row, contextsTable->rows()) {
+        Context *context = new Context(row, q);
+        contextsByName.insert(context->name(), context);
+        contexts.insert(row->id(), context);
     }
 
-    foreach(Context *context, contexts.values()) {
-        context->init();
+    foreach(Row *row, entitiesTable->rows()) {
+        EntityType *type = new EntityType(row, q);
+        entityTypes.insert(row->id(), type);
+    }
+
+    foreach(Context *context, contextsByName.values()) {
+        context->initializeEntityHierarchy();
+    }
+
+    foreach(Row *row, attributesTable->rows()) {
+        Attribute *attribute = new Attribute(row, q);
+        attributes.insert(row->id(), attribute);
     }
 
     return true;
@@ -150,16 +171,28 @@ QString Storage::fileName() const
     return d->fileName;
 }
 
+EntityType *Storage::entityType(int id) const
+{
+    Q_D(const Storage);
+    return d->entityTypes.value(id, 0);
+}
+
+Context *Storage::context(int id) const
+{
+    Q_D(const Storage);
+    return d->contexts.value(id);
+}
+
 Context *Storage::context(const QString &name) const
 {
     Q_D(const Storage);
-    return d->contexts.value(name);
+    return d->contextsByName.value(name);
 }
 
 QList<Context *> Storage::contexts() const
 {
     Q_D(const Storage);
-    return d->contexts.values();
+    return d->contextsByName.values();
 }
 
 bool Storage::open()

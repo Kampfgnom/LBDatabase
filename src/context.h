@@ -6,13 +6,15 @@
 namespace LBDatabase {
 
 class EntityType;
+class Row;
+class Storage;
 
 class ContextPrivate;
 class Context : public QObject
 {
     Q_OBJECT
 public:
-    explicit Context(const QString &name, QObject *parent = 0);
+    explicit Context(Row *row, Storage *parent);
     ~Context();
 
     QString name() const;
@@ -23,9 +25,10 @@ public:
 
 private:
     friend class StoragePrivate;
+    friend class EntityTypePrivate;
 
     void addEntityType(EntityType *type);
-    void init();
+    void initializeEntityHierarchy();
 
     ContextPrivate * const d_ptr;
     Q_DECLARE_PRIVATE(Context)

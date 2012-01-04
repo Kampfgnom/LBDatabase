@@ -6,6 +6,7 @@
 #include <LBDatabase/row.h>
 #include <LBDatabase/table.h>
 
+#include <LBDatabase/attribute.h>
 #include <LBDatabase/context.h>
 #include <LBDatabase/entity.h>
 #include <LBDatabase/entitytype.h>

@@ -1,6 +1,8 @@
 #include "context.h"
 
 #include "entitytype.h"
+#include "row.h"
+#include "storage.h"
 
 #include <QHash>
 
@@ -9,11 +11,18 @@ namespace LBDatabase {
 /******************************************************************************
 ** ContextPrivate
 */
+namespace {
+const QString NameColumn("name");
+}
+
 class ContextPrivate {
     ContextPrivate() : baseEntityType(0) {}
 
     void init();
+    void initializeEntityHierarchy();
 
+    Row *row;
+    Storage *storage;
     QString name;
     QHash<QString, EntityType *> entityTypes;
     EntityType *baseEntityType;
@@ -24,10 +33,15 @@ class ContextPrivate {
 
 void ContextPrivate::init()
 {
+    name = row->data(NameColumn).toString();
+}
+
+void ContextPrivate::initializeEntityHierarchy()
+{
+    EntityType *parentType;
     foreach(EntityType *type, entityTypes) {
-        QString parent = type->parentEntityTypeName();
-        if(!parent.isEmpty()) {
-            EntityType *parentType = entityTypes.value(parent);
+        parentType = storage->entityType(type->parentEntityTypeId());
+        if(parentType) {
             type->setParentEntityType(parentType);
             parentType->addChildEntityType(type);
         }
@@ -40,13 +54,14 @@ void ContextPrivate::init()
 /******************************************************************************
 ** Context
 */
-Context::Context(const QString &name, QObject *parent) :
+Context::Context(Row *row, Storage *parent) :
     QObject(parent),
     d_ptr(new ContextPrivate)
 {
     Q_D(Context);
     d->q_ptr = this;
-    d->name = name;
+    d->row = row;
+    d->storage = parent;
     d->init();
 }
 
@@ -89,10 +104,10 @@ void Context::addEntityType(EntityType *type)
     d->entityTypes.insert(type->name(), type);
 }
 
-void Context::init()
+void Context::initializeEntityHierarchy()
 {
     Q_D(Context);
-    d->init();
+    d->initializeEntityHierarchy();
 }
 
 } // namespace LBDatabase

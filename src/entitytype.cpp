@@ -1,23 +1,35 @@
 #include "entitytype.h"
 
 #include "context.h"
+#include "row.h"
+#include "storage.h"
 
 namespace LBDatabase {
 
 /******************************************************************************
 ** EntityTypePrivate
 */
+namespace {
+const QString ContextColumn("contextId");
+const QString NameColumn("name");
+const QString ParentEntityTypeIdColumn("parentEntityTypeId");
+}
+
 class EntityTypePrivate {
     EntityTypePrivate() : context(0), parentEntityType(0) {}
 
     void init();
 
+    Row *row;
     QString name;
     Context *context;
+    Storage *storage;
     EntityType *parentEntityType;
-    QString parentEntityTypeName;
+    int parentEntityTypeId;
 
     QList<EntityType *> childEntityTypes;
+
+    QList<Attribute *> attributes;
 
     EntityType * q_ptr;
     Q_DECLARE_PUBLIC(EntityType)
@@ -25,27 +37,25 @@ class EntityTypePrivate {
 
 void EntityTypePrivate::init()
 {
+    Q_Q(EntityType);
+    name = row->data(NameColumn).toString();
+    parentEntityTypeId = row->data(ParentEntityTypeIdColumn).toInt();
+    int contextId = row->data(ContextColumn).toInt();
+    context = storage->context(contextId);
+    context->addEntityType(q);
 }
 
 /******************************************************************************
 ** EntityType
 */
-EntityType::EntityType(QObject *parent) :
+EntityType::EntityType(Row *row, Storage *parent) :
     QObject(parent),
     d_ptr(new EntityTypePrivate)
 {
     Q_D(EntityType);
     d->q_ptr = this;
-    d->init();
-}
-
-EntityType::EntityType(Context *parent) :
-    QObject(parent),
-    d_ptr(new EntityTypePrivate)
-{
-    Q_D(EntityType);
-    d->q_ptr = this;
-    d->context = parent;
+    d->row = row;
+    d->storage = parent;
     d->init();
 }
 
@@ -107,10 +117,10 @@ void EntityType::setParentEntityType(EntityType *type)
     d->parentEntityType = type;
 }
 
-QString EntityType::parentEntityTypeName() const
+int EntityType::parentEntityTypeId() const
 {
     Q_D(const EntityType);
-    return d->parentEntityTypeName;
+    return d->parentEntityTypeId;
 }
 
 QList<EntityType *> EntityType::childEntityTypes() const
@@ -119,12 +129,24 @@ QList<EntityType *> EntityType::childEntityTypes() const
     return d->childEntityTypes;
 }
 
-void EntityType::setParentEntityTypeName(const QString &name)
+QList<Attribute *> EntityType::attributes() const
+{
+    Q_D(const EntityType);
+    return d->attributes;
+}
+
+void EntityType::setParentEntityTypeId(int id)
 {
     Q_D(EntityType);
-    if(d->parentEntityTypeName == name)
+    if(d->parentEntityTypeId == id)
         return;
-    d->parentEntityTypeName = name;
+    d->parentEntityTypeId = id;
+}
+
+void EntityType::addAttribute(Attribute *attribute)
+{
+    Q_D(EntityType);
+    d->attributes.append(attribute);
 }
 
 } // namespace LBDatabase

@@ -5,23 +5,27 @@
 
 namespace LBDatabase {
 
+class Attribute;
 class Context;
+class Row;
+class Storage;
 
 class EntityTypePrivate;
 class EntityType : public QObject
 {
     Q_OBJECT
 public:
-    explicit EntityType(QObject *parent = 0);
-    explicit EntityType(Context *parent = 0);
+    explicit EntityType(LBDatabase::Row *row, Storage *parent);
     ~EntityType();
 
     QString name() const;
     Context *context() const;
     EntityType *parentEntityType() const;
-    QString parentEntityTypeName() const;
+    int parentEntityTypeId() const;
 
     QList<EntityType *> childEntityTypes() const;
+
+    QList<Attribute *> attributes() const;
 
 Q_SIGNALS:
     void nameChanged(QString name);
@@ -29,12 +33,14 @@ Q_SIGNALS:
 private:
     friend class ContextPrivate;
     friend class StoragePrivate;
+    friend class AttributePrivate;
 
     void setName(const QString &name);
     void setContext(Context *context);
     void addChildEntityType(EntityType *type);
     void setParentEntityType(EntityType *type);
-    void setParentEntityTypeName(const QString &name);
+    void setParentEntityTypeId(int id);
+    void addAttribute(Attribute *attribute);
 
     EntityTypePrivate * const d_ptr;
     Q_DECLARE_PRIVATE(EntityType)

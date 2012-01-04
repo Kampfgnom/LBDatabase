@@ -7,6 +7,7 @@ namespace LBDatabase {
 
 class Context;
 class Database;
+class EntityType;
 
 class StoragePrivate;
 class Storage : public QObject
@@ -23,6 +24,9 @@ public:
     void setFileName(const QString &fileName);
     QString fileName() const;
 
+    EntityType *entityType(int id) const;
+
+    Context *context(int id) const;
     Context *context(const QString &name) const;
     QList<Context *> contexts() const;
 

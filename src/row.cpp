@@ -101,6 +101,15 @@ Row::~Row()
 }
 
 /*!
+  Returns the ID of the row.
+  */
+int Row::id() const
+{
+    Q_D(const Row);
+    return d->id;
+}
+
+/*!
   Returns the content stored in the database in this row in the Column at index
   \a column.
   */
