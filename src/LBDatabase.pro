@@ -11,13 +11,21 @@ HEADERS += \
     column.h \
     database.h \
     row.h \
-    table.h
+    table.h \
+    entity.h \
+    storage.h \
+    context.h \
+    entitytype.h
 
 SOURCES += \
     column.cpp \
     database.cpp \
     row.cpp \
-    table.cpp
+    table.cpp \
+    entity.cpp \
+    storage.cpp \
+    context.cpp \
+    entitytype.cpp
 
 OTHER_FILES +=
 

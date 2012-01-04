@@ -19,6 +19,7 @@ public:
     ~Row();
 
     QVariant data(int column) const;
+    QVariant data(const QString &column) const;
     void setData(int column, const QVariant &data);
 
 Q_SIGNALS:

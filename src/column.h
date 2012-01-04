@@ -31,6 +31,7 @@ public:
     QString typeName() const;
     Table *table() const;
     Type type() const;
+    int index() const;
 
     static Type variantTypeToType(QVariant::Type type);
     static QString typeToName(Type type);
@@ -38,6 +39,7 @@ public:
 
 Q_SIGNALS:
     void nameChanged(QString name);
+    void indexChanged(int index);
 
 protected:
     friend class TablePrivate;
@@ -45,6 +47,7 @@ protected:
     explicit Column(const QSqlField &field, Table *table);
 
     void setName(const QString &name);
+    void setIndex(int index);
 
 private:
     ColumnPrivate * const d_ptr;

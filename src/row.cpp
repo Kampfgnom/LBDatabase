@@ -110,6 +110,12 @@ QVariant Row::data(int column) const
     return d->values.at(column);
 }
 
+QVariant Row::data(const QString &column) const
+{
+    Q_D(const Row);
+    return data(d->table->column(column)->index());
+}
+
 /*!
   Sets the content stored in the database in this row in the Column at index
   \a column to \a data.

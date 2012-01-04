@@ -28,7 +28,11 @@ private:
     Column *addColumn(const QString &name, const QString &sqlType, const QVariant &defaultValue);
     void removeColumn(const QString &name);
     void changeColumnName(const QString &name, const QString &newName);
+
     Row *appendRow();
+    void deleteRow(int id);
+
+    QList<QVariant> select(const QString &column, bool distinct) const;
 
     Table *q_ptr;
     Database *database;
@@ -49,6 +53,7 @@ void TablePrivate::init()
     columns.reserve(columnNames.count());
     for(int i = 0; i < columnNames.count(); ++i) {
         Column *column = new Column(columnNames.field(i), q);
+        column->setIndex(i);
         columns.append(column);
         columnsByName.insert(column->name(), column);
     }
@@ -173,6 +178,11 @@ void TablePrivate::removeColumn(const QString &name)
     Column *column = columnsByName.value(name);
     int index = columns.indexOf(column);
     q->beginRemoveColumns(QModelIndex(), index, index);
+
+    for(int i = index; i < columns.size(); ++i) {
+        columns.at(i)->setIndex(i);
+    }
+
     foreach(Row *row, rows) {
         row->removeColumn(index);
     }
@@ -200,6 +210,34 @@ Row *TablePrivate::appendRow()
     rowsById.insert(id, row);
     q->endInsertRows();
     return row;
+}
+
+void TablePrivate::deleteRow(int id)
+{
+    QSqlQuery query(database->sqlDatabase());
+    query.exec(QLatin1String("DELETE FROM ")+name+QLatin1String(" WHERE id = '")+QString::number(id)+QLatin1String("';"));
+    checkSqlError(query);
+}
+
+QList<QVariant> TablePrivate::select(const QString &column, bool distinct) const
+{
+    QSqlQuery query(database->sqlDatabase());
+
+    QString s = QLatin1String("SELECT ");
+    if(distinct) {
+        s += QLatin1String("DISTINCT ");
+    }
+    s+=column+QLatin1String(" FROM ")+name;
+
+    query.exec(s);
+    checkSqlError(query);
+
+    QList<QVariant> result;
+    while(query.next()) {
+        result.append(query.value(0));
+    }
+
+    return result;
 }
 
 /******************************************************************************
@@ -325,6 +363,17 @@ void Table::removeColumn(const QString &name)
 }
 
 /*!
+  Deletes the row with ID \a id.
+
+  Does nothing if no such row exists.
+  */
+void Table::deleteRow(int id)
+{
+    Q_D(Table);
+    d->deleteRow(id);
+}
+
+/*!
   Changes the name of the column named \a name to \a newName. Does nothing if
   \a name equals \a newName or if no column \a name exists.
 
@@ -350,6 +399,15 @@ Column *Table::column(int column) const
 {
     Q_D(const Table);
     return d->columns.at(column);
+}
+
+/*!
+  Returns the column with the name \a column.
+  */
+Column *Table::column(const QString &column) const
+{
+    Q_D(const Table);
+    return d->columnsByName.value(column);
 }
 
 /*!
@@ -395,12 +453,38 @@ Row *Table::row(int id) const
 }
 
 /*!
+  Returns the row at \a index or \a 0 if no such row exists.
+  */
+Row *Table::rowAt(int index) const
+{
+    Q_D(const Table);
+    if(index >= d->rows.count())
+        return 0;
+
+    return d->rows.at(index);
+}
+
+/*!
   Returns a list of all rows in the table.
   */
 QList<Row *> Table::rows() const
 {
     Q_D(const Table);
     return d->rows;
+}
+
+/*!
+  Returns a list of each value in the column \a column in the table.
+
+  If \a distinct is true, these values are made distinct by sqlite.
+
+  This is essentially equivalent to constructing a SELECT statement and querying
+  the underlying database directly.
+  */
+QList<QVariant> Table::select(const QString &column, bool distinct)
+{
+    Q_D(const Table);
+    return d->select(column, distinct);
 }
 
 /*!

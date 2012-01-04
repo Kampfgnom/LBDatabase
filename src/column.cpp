@@ -15,13 +15,15 @@ namespace LBDatabase {
 class ColumnPrivate {
     explicit ColumnPrivate() :
         table(0),
-        type(Column::Null)
+        type(Column::Null),
+        index(-1)
     {}
 
     friend class Column;
     Table *table;
     QString name;
     Column::Type type;
+    int index;
 };
 
 /******************************************************************************
@@ -135,6 +137,28 @@ Column::Type Column::type() const
 {
     Q_D(const Column);
     return d->type;
+}
+
+/*!
+  Returns the index of this column in its table.
+  */
+int Column::index() const
+{
+    Q_D(const Column);
+    return d->index;
+}
+
+/*!
+  Sets the index of the column to \a index.
+  */
+void Column::setIndex(int index)
+{
+    Q_D(Column);
+    if(index == d->index)
+        return;
+
+    d->index = index;
+    emit indexChanged(index);
 }
 
 /*!

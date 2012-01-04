@@ -21,6 +21,7 @@ public:
     Database *database() const;
 
     Column *column(int column) const;
+    Column *column(const QString &column) const;
     QList<Column *> columns() const;
     QStringList columnNames() const;
 
@@ -28,9 +29,13 @@ public:
     Column *addColumn(const QString &name, const QString &sqlType, const QVariant &defaultValue = QVariant());
     void removeColumn(const QString &name);
 
+    void deleteRow(int id);
     Row *appendRow();
     Row *row(int id) const;
+    Row *rowAt(int index) const;
     QList<Row *> rows() const;
+
+    QList<QVariant> select(const QString &column, bool distinct = false);
 
     // QAbstractTableModel
     QVariant data(const QModelIndex &index, int role) const;
