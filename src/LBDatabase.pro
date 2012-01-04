@@ -19,6 +19,5 @@ SOURCES += \
     row.cpp \
     table.cpp
 
-OTHER_FILES += \
-    DoxyFile
+OTHER_FILES +=
 
