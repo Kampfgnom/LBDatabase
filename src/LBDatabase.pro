@@ -16,7 +16,8 @@ HEADERS += \
     storage.h \
     context.h \
     entitytype.h \
-    attribute.h
+    attribute.h \
+    attributevalue.h
 
 SOURCES += \
     column.cpp \
@@ -27,7 +28,8 @@ SOURCES += \
     storage.cpp \
     context.cpp \
     entitytype.cpp \
-    attribute.cpp
+    attribute.cpp \
+    attributevalue.cpp
 
 OTHER_FILES +=
 

@@ -14,10 +14,18 @@ class Attribute : public QObject
 {
     Q_OBJECT
 public:
+    enum PrefetchStrategy {
+        NoPrefretch,
+        PrefetchOnStartup
+    };
+
     explicit Attribute(Row *row, Storage *parent);
     ~Attribute();
 
     QString name() const;
+    QString displayName() const;
+
+    PrefetchStrategy prefetchStrategy() const;
 
 Q_SIGNALS:
     void nameChanged(QString name);

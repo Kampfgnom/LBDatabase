@@ -3,6 +3,8 @@
 
 #include <QObject>
 
+#include <QMetaType>
+
 namespace LBDatabase {
 
 class Context;
@@ -20,6 +22,8 @@ public:
     ~Storage();
 
     Database *database() const;
+
+    QString name() const;
 
     void setFileName(const QString &fileName);
     QString fileName() const;
@@ -41,5 +45,7 @@ private:
 };
 
 } // namespace LBDatabase
+
+Q_DECLARE_METATYPE(LBDatabase::Storage*)
 
 #endif // LBDATABASE_STORAGE_H

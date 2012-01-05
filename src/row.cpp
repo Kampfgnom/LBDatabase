@@ -122,7 +122,12 @@ QVariant Row::data(int column) const
 QVariant Row::data(const QString &column) const
 {
     Q_D(const Row);
-    return data(d->table->column(column)->index());
+
+    Column *c = d->table->column(column);
+    if(!c)
+        return QVariant();
+
+    return data(c->index());
 }
 
 /*!

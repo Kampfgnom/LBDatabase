@@ -19,6 +19,7 @@ class EntityTypePrivate {
     EntityTypePrivate() : context(0), parentEntityType(0) {}
 
     void init();
+    void addInheritedAttributes(QList<Attribute *> attributes);
 
     Row *row;
     QString name;
@@ -30,6 +31,8 @@ class EntityTypePrivate {
     QList<EntityType *> childEntityTypes;
 
     QList<Attribute *> attributes;
+    QList<Attribute *> inheritedAttributes;
+    QList<Attribute *> aggregatedAttributes;
 
     EntityType * q_ptr;
     Q_DECLARE_PUBLIC(EntityType)
@@ -43,6 +46,16 @@ void EntityTypePrivate::init()
     int contextId = row->data(ContextColumn).toInt();
     context = storage->context(contextId);
     context->addEntityType(q);
+}
+
+void EntityTypePrivate::addInheritedAttributes(QList<Attribute *> attributes)
+{
+    inheritedAttributes.append(attributes);
+    aggregatedAttributes.append(attributes);
+
+    foreach(EntityType *type, childEntityTypes) {
+        type->d_func()->addInheritedAttributes(aggregatedAttributes);
+    }
 }
 
 /******************************************************************************
@@ -135,6 +148,12 @@ QList<Attribute *> EntityType::attributes() const
     return d->attributes;
 }
 
+QList<Attribute *> EntityType::aggregatedAttributes() const
+{
+    Q_D(const EntityType);
+    return d->aggregatedAttributes;
+}
+
 void EntityType::setParentEntityTypeId(int id)
 {
     Q_D(EntityType);
@@ -147,6 +166,14 @@ void EntityType::addAttribute(Attribute *attribute)
 {
     Q_D(EntityType);
     d->attributes.append(attribute);
+    d->aggregatedAttributes.append(attribute);
+}
+
+void EntityType::addAttributesToChildren()
+{
+    Q_D(EntityType);
+    d->addInheritedAttributes(QList<Attribute *>());
+
 }
 
 } // namespace LBDatabase

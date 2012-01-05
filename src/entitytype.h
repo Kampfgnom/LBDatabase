@@ -26,6 +26,7 @@ public:
     QList<EntityType *> childEntityTypes() const;
 
     QList<Attribute *> attributes() const;
+    QList<Attribute *> aggregatedAttributes() const;
 
 Q_SIGNALS:
     void nameChanged(QString name);
@@ -41,6 +42,7 @@ private:
     void setParentEntityType(EntityType *type);
     void setParentEntityTypeId(int id);
     void addAttribute(Attribute *attribute);
+    void addAttributesToChildren();
 
     EntityTypePrivate * const d_ptr;
     Q_DECLARE_PRIVATE(EntityType)

@@ -18,9 +18,12 @@ namespace LBDatabase {
 ** StoragePrivate
 */
 namespace {
+const QString MetaDataTableName("lbmeta");
 const QString ContextsTableName("lbmeta_contexts");
 const QString EntitiesTableName("lbmeta_entitytypes");
 const QString AttributesTableName("lbmeta_attributes");
+
+const QString NameColumn("name");
 }
 
 class StoragePrivate {
@@ -34,7 +37,9 @@ class StoragePrivate {
     Table *attributesTable;
     Table *contextsTable;
     Table *entitiesTable;
+    Table *metaDataTable;
 
+    QString name;
     QString fileName;
     Database *database;
 
@@ -70,6 +75,10 @@ bool StoragePrivate::open()
     if(!database->open())
         return false;
 
+    metaDataTable = database->table(MetaDataTableName);
+    if(!metaDataTable)
+        return false;
+
     contextsTable = database->table(ContextsTableName);
     if(!contextsTable)
         return false;
@@ -82,6 +91,9 @@ bool StoragePrivate::open()
     if(!attributesTable)
         return false;
 
+    Row *metaDataRow = metaDataTable->rowAt(0);
+    name = metaDataRow->data(NameColumn).toString();
+
     foreach(Row *row, contextsTable->rows()) {
         Context *context = new Context(row, q);
         contextsByName.insert(context->name(), context);
@@ -93,13 +105,14 @@ bool StoragePrivate::open()
         entityTypes.insert(row->id(), type);
     }
 
-    foreach(Context *context, contextsByName.values()) {
-        context->initializeEntityHierarchy();
-    }
-
     foreach(Row *row, attributesTable->rows()) {
         Attribute *attribute = new Attribute(row, q);
         attributes.insert(row->id(), attribute);
+    }
+
+    foreach(Context *context, contextsByName.values()) {
+        context->initializeEntityHierarchy();
+        context->loadEntities();
     }
 
     return true;
@@ -134,6 +147,12 @@ Database *Storage::database() const
 {
     Q_D(const Storage);
     return d->database;
+}
+
+QString Storage::name() const
+{
+    Q_D(const Storage);
+    return d->name;
 }
 
 Storage::Storage(QObject *parent) :
