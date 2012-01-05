@@ -1,7 +1,7 @@
 #ifndef LBDATABASE_ATTRIBUTEVALUE_H
 #define LBDATABASE_ATTRIBUTEVALUE_H
 
-#include <QObject>
+#include "propertyvalue.h"
 
 namespace LBDatabase {
 
@@ -9,15 +9,16 @@ class Attribute;
 class Entity;
 
 class AttributeValuePrivate;
-class AttributeValue : public QObject
+class AttributeValue : public PropertyValue
 {
     Q_OBJECT
 public:
     explicit AttributeValue(Attribute *attribute, Entity *parent);
     ~AttributeValue();
 
-    QVariant value() const;
+    QVariant data(int role = Qt::DisplayRole) const;
 
+    Property *property() const;
 private:
     AttributeValuePrivate * const d_ptr;
     Q_DECLARE_PRIVATE(AttributeValue)

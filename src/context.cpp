@@ -1,9 +1,11 @@
 #include "context.h"
 
 #include "attribute.h"
+#include "attributevalue.h"
 #include "database.h"
 #include "entity.h"
 #include "entitytype.h"
+#include "relation.h"
 #include "row.h"
 #include "storage.h"
 #include "table.h"
@@ -27,6 +29,7 @@ class ContextPrivate {
     void init();
     void initializeEntityHierarchy();
     void loadEntities();
+    void initializeRelations();
 
     Row *row;
     Storage *storage;
@@ -35,7 +38,8 @@ class ContextPrivate {
     EntityType *baseEntityType;
     Table *contextTable;
     QList<Entity *> entities;
-    QList<Attribute *> attributes;
+    QHash<int, Entity *> entitiesById;
+    QList<Property *> properties;
 
     Context * q_ptr;
     Q_DECLARE_PUBLIC(Context)
@@ -51,7 +55,7 @@ void ContextPrivate::initializeEntityHierarchy()
     EntityType *parentType;
     foreach(EntityType *type, entityTypes) {
         parentType = storage->entityType(type->parentEntityTypeId());
-        if(parentType) {
+        if(Q_LIKELY(parentType)) {
             type->setParentEntityType(parentType);
             parentType->addChildEntityType(type);
         }
@@ -60,18 +64,29 @@ void ContextPrivate::initializeEntityHierarchy()
         }
     }
 
-    baseEntityType->addAttributesToChildren();
+    baseEntityType->addPropertiesToChildren();
 }
 
 void ContextPrivate::loadEntities()
 {
+    Q_Q(Context);
     contextTable = storage->database()->table(name);
     if(!contextTable)
         return;
 
+    entities.reserve(contextTable->rows().size());
+    entitiesById.reserve(contextTable->rows().size());
     foreach(Row *row, contextTable->rows()) {
-        Entity *entity = new Entity(row, storage);
+        Entity *entity = new Entity(row, q);
         entities.append(entity);
+        entitiesById.insert(row->id(), entity);
+    }
+}
+
+void ContextPrivate::initializeRelations()
+{
+    foreach(Entity *entity, entities) {
+        entity->initializeRelations();
     }
 }
 
@@ -125,6 +140,12 @@ QList<EntityType *> Context::entityTypes() const
     return d->entityTypes.values();
 }
 
+Entity *Context::entity(int id) const
+{
+    Q_D(const Context);
+    return d->entitiesById.value(id);
+}
+
 Entity *Context::entityAt(int index) const
 {
     Q_D(const Context);
@@ -149,10 +170,19 @@ void Context::addEntityType(EntityType *type)
 void Context::addAttribute(Attribute *attribute)
 {
     Q_D(Context);
-    if(d->attributes.contains(attribute))
+    if(d->properties.contains(attribute))
         return;
 
-    d->attributes.append(attribute);
+    d->properties.append(attribute);
+}
+
+void Context::addRelation(Relation *relation)
+{
+    Q_D(Context);
+    if(d->properties.contains(relation))
+        return;
+
+    d->properties.append(relation);
 }
 
 void Context::initializeEntityHierarchy()
@@ -165,6 +195,12 @@ void Context::loadEntities()
 {
     Q_D(Context);
     d->loadEntities();
+}
+
+void Context::initializeRelations()
+{
+    Q_D(Context);
+    d->initializeRelations();
 }
 
 /*!
@@ -181,7 +217,7 @@ QVariant Context::data(const QModelIndex &index, int role) const
         case 1:
             return entity->entityType()->name();
         default:
-            return entity->value(d->attributes.at(index.column() - 2));
+            return entity->data(d->properties.at(index.column() - 2));
         }
     }
 
@@ -202,7 +238,7 @@ QVariant Context::headerData(int section, Qt::Orientation orientation, int role)
             case 1:
                 return QLatin1String("Type");
             default:
-                return d->attributes.at(section - 2)->displayName();
+                return d->properties.at(section - 2)->displayName(this);
             }
         }
         else if(role == Qt::TextAlignmentRole) {
@@ -221,7 +257,7 @@ int Context::columnCount(const QModelIndex &parent) const
         return 0;
     }
     Q_D(const Context);
-    return d->attributes.size() + 2;
+    return d->properties.size() + 2;
 }
 
 /*!

@@ -4,6 +4,7 @@
 #include "context.h"
 #include "database.h"
 #include "entitytype.h"
+#include "relation.h"
 #include "row.h"
 #include "table.h"
 
@@ -22,6 +23,7 @@ const QString MetaDataTableName("lbmeta");
 const QString ContextsTableName("lbmeta_contexts");
 const QString EntitiesTableName("lbmeta_entitytypes");
 const QString AttributesTableName("lbmeta_attributes");
+const QString RelationsTableName("lbmeta_relations");
 
 const QString NameColumn("name");
 }
@@ -38,17 +40,16 @@ class StoragePrivate {
     Table *contextsTable;
     Table *entitiesTable;
     Table *metaDataTable;
+    Table *relationsTable;
 
     QString name;
     QString fileName;
     Database *database;
 
     QHash<int, Context *> contexts;
-    QHash<QString, Context *> contextsByName;
-
     QHash<int, EntityType *> entityTypes;
-
     QHash<int, Attribute *> attributes;
+    QHash<int, Relation *> relations;
 
     Storage * q_ptr;
     Q_DECLARE_PUBLIC(Storage)
@@ -91,12 +92,15 @@ bool StoragePrivate::open()
     if(!attributesTable)
         return false;
 
+    relationsTable = database->table(RelationsTableName);
+    if(!relationsTable)
+        return false;
+
     Row *metaDataRow = metaDataTable->rowAt(0);
     name = metaDataRow->data(NameColumn).toString();
 
     foreach(Row *row, contextsTable->rows()) {
         Context *context = new Context(row, q);
-        contextsByName.insert(context->name(), context);
         contexts.insert(row->id(), context);
     }
 
@@ -110,9 +114,18 @@ bool StoragePrivate::open()
         attributes.insert(row->id(), attribute);
     }
 
-    foreach(Context *context, contextsByName.values()) {
+    foreach(Row *row, relationsTable->rows()) {
+        Relation *relation = new Relation(row, q);
+        relations.insert(row->id(), relation);
+    }
+
+    foreach(Context *context, contexts.values()) {
         context->initializeEntityHierarchy();
         context->loadEntities();
+    }
+
+    foreach(Context *context, contexts.values()) {
+        context->initializeRelations();
     }
 
     return true;
@@ -202,16 +215,16 @@ Context *Storage::context(int id) const
     return d->contexts.value(id);
 }
 
-Context *Storage::context(const QString &name) const
-{
-    Q_D(const Storage);
-    return d->contextsByName.value(name);
-}
-
 QList<Context *> Storage::contexts() const
 {
     Q_D(const Storage);
-    return d->contextsByName.values();
+    return d->contexts.values();
+}
+
+Attribute *Storage::attribute(int id) const
+{
+    Q_D(const Storage);
+    return d->attributes.value(id);
 }
 
 bool Storage::open()

@@ -7,6 +7,7 @@
 
 namespace LBDatabase {
 
+class Attribute;
 class Context;
 class Database;
 class EntityType;
@@ -33,6 +34,8 @@ public:
     Context *context(int id) const;
     Context *context(const QString &name) const;
     QList<Context *> contexts() const;
+
+    Attribute *attribute(int id) const;
 
     bool open();
 

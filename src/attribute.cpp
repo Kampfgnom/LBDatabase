@@ -12,13 +12,15 @@ namespace LBDatabase {
 */
 namespace {
 const QString NameColumn("name");
+const QString TypeColumn("type");
 const QString DisplayNameColumn("displayName");
 const QString EntityTypeIdColumn("entityTypeId");
 const QString PrefetchStrategyColumn("prefetchStrategy");
+const QString VisibilityColumn("visibility");
 }
 
 class AttributePrivate {
-    AttributePrivate() : prefetchStrategy(Attribute::NoPrefretch) {}
+    AttributePrivate() : prefetchStrategy(Attribute::PrefetchOnStartup), visibility(Attribute::Visible) {}
 
     void init();
 
@@ -26,9 +28,11 @@ class AttributePrivate {
     Storage *storage;
     QString name;
     QString displayName;
-    EntityType *type;
+    EntityType *entityType;
 
+    Attribute::Type type;
     Attribute::PrefetchStrategy prefetchStrategy;
+    Attribute::Visibility visibility;
 
     Attribute * q_ptr;
     Q_DECLARE_PUBLIC(Attribute)
@@ -40,17 +44,19 @@ void AttributePrivate::init()
     name = row->data(NameColumn).toString();
     displayName = row->data(DisplayNameColumn).toString();
     prefetchStrategy = static_cast<Attribute::PrefetchStrategy>(row->data(PrefetchStrategyColumn).toInt());
+    visibility  = static_cast<Attribute::Visibility>(row->data(VisibilityColumn).toInt());
+    type  = static_cast<Attribute::Type>(row->data(TypeColumn).toInt());
 
-    type = storage->entityType(row->data(EntityTypeIdColumn).toInt());
-    type->addAttribute(q);
-    type->context()->addAttribute(q);
+    entityType = storage->entityType(row->data(EntityTypeIdColumn).toInt());
+    entityType->addAttribute(q);
+    entityType->context()->addAttribute(q);
 }
 
 /******************************************************************************
 ** Attribute
 */
 Attribute::Attribute(Row *row, Storage *parent) :
-    QObject(parent),
+    Property(parent),
     d_ptr(new AttributePrivate)
 {
     Q_D(Attribute);
@@ -64,6 +70,12 @@ Attribute::~Attribute()
 {
     Q_D(Attribute);
     delete d;
+}
+
+int Attribute::id() const
+{
+    Q_D(const Attribute);
+    return d->row->id();
 }
 
 void Attribute::setName(const QString &name)
@@ -81,8 +93,9 @@ QString Attribute::name() const
     return d->name;
 }
 
-QString Attribute::displayName() const
+QString Attribute::displayName(const Context *context) const
 {
+    Q_UNUSED(context)
     Q_D(const Attribute);
     return d->displayName;
 }
@@ -91,6 +104,12 @@ Attribute::PrefetchStrategy Attribute::prefetchStrategy() const
 {
     Q_D(const Attribute);
     return d->prefetchStrategy;
+}
+
+Attribute::Visibility Attribute::visibility() const
+{
+    Q_D(const Attribute);
+    return d->visibility;
 }
 
 } // namespace LBDatabase

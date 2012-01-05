@@ -2,6 +2,7 @@
 
 #include "attribute.h"
 #include "entity.h"
+#include "row.h"
 
 #include <QVariant>
 
@@ -18,7 +19,7 @@ class AttributeValuePrivate {
     Entity *entity;
     Attribute *attribute;
 
-    QVariant value;
+    QVariant data;
 
     AttributeValue * q_ptr;
     Q_DECLARE_PUBLIC(AttributeValue)
@@ -26,10 +27,8 @@ class AttributeValuePrivate {
 
 void AttributeValuePrivate::init()
 {
-    Q_Q(AttributeValue);
-
     if(attribute->prefetchStrategy() == Attribute::PrefetchOnStartup) {
-        value = entity->data(attribute->name());
+        data = entity->row()->data(attribute->name());
     }
 }
 
@@ -37,7 +36,7 @@ void AttributeValuePrivate::init()
 ** AttributeValue
 */
 AttributeValue::AttributeValue(Attribute *attribute, Entity *parent) :
-    QObject(parent),
+    PropertyValue(parent),
     d_ptr(new AttributeValuePrivate)
 {
     Q_D(AttributeValue);
@@ -53,10 +52,17 @@ AttributeValue::~AttributeValue()
     delete d;
 }
 
-QVariant AttributeValue::value() const
+QVariant AttributeValue::data(int role) const
+{
+    Q_UNUSED(role)
+    Q_D(const AttributeValue);
+    return d->data;
+}
+
+Property *AttributeValue::property() const
 {
     Q_D(const AttributeValue);
-    return d->value;
+    d->attribute;
 }
 
 } // namespace LBDatabase

@@ -6,7 +6,11 @@
 namespace LBDatabase {
 
 class Attribute;
+class AttributeValue;
+class Context;
 class EntityType;
+class Property;
+class PropertyValue;
 class Row;
 class Storage;
 
@@ -15,19 +19,29 @@ class Entity : public QObject
 {
     Q_OBJECT
 public:
-    explicit Entity(Row *row, Storage *parent);
+    explicit Entity(Row *row, Context *parent);
     ~Entity();
 
-    QVariant value(Attribute *attribute) const;
+    virtual QString displayName(int role = Qt::DisplayRole) const;
+    QVariant data(Property *property) const;
 
     EntityType *entityType() const;
+    Storage *storage() const;
+    Context *context() const;
+    QList<PropertyValue *> propertieValues() const;
+    PropertyValue *propertyValue(Property *property) const;
 
 private:
     friend class AttributeValuePrivate;
     friend class Context;
+    friend class ContextPrivate;
+    friend class RelationValuePrivate;
+    friend class RelationInverseValuePrivate;
 
-    QVariant data(const QString &attributeName) const;
     Row *row() const;
+
+    void initializeRelations();
+    void initializeRelationContent();
 
     EntityPrivate * const d_ptr;
     Q_DECLARE_PRIVATE(Entity)

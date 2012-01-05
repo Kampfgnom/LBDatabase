@@ -1,6 +1,9 @@
 #include "entitytype.h"
 
+#include "attribute.h"
 #include "context.h"
+#include "property.h"
+#include "relation.h"
 #include "row.h"
 #include "storage.h"
 
@@ -19,7 +22,7 @@ class EntityTypePrivate {
     EntityTypePrivate() : context(0), parentEntityType(0) {}
 
     void init();
-    void addInheritedAttributes(QList<Attribute *> attributes);
+    void addInheritedProperties(QList<Attribute *> attributes, QList<Relation *> newRelations);
 
     Row *row;
     QString name;
@@ -30,9 +33,9 @@ class EntityTypePrivate {
 
     QList<EntityType *> childEntityTypes;
 
+    QList<Property *> properties;
     QList<Attribute *> attributes;
-    QList<Attribute *> inheritedAttributes;
-    QList<Attribute *> aggregatedAttributes;
+    QList<Relation *> relations;
 
     EntityType * q_ptr;
     Q_DECLARE_PUBLIC(EntityType)
@@ -48,13 +51,23 @@ void EntityTypePrivate::init()
     context->addEntityType(q);
 }
 
-void EntityTypePrivate::addInheritedAttributes(QList<Attribute *> attributes)
+void EntityTypePrivate::addInheritedProperties(QList<Attribute *> newAttributes, QList<Relation *> newRelations)
 {
-    inheritedAttributes.append(attributes);
-    aggregatedAttributes.append(attributes);
+    properties.reserve(attributes.size() + newRelations.size());
+    attributes.reserve(attributes.size());
+    relations.reserve(newRelations.size());
+    foreach(Attribute *attribute, newAttributes) {
+        properties.append(attribute);
+    }
+    foreach(Relation *relation, newRelations) {
+        properties.append(relation);
+    }
+
+    relations.append(newRelations);
+    attributes.append(newAttributes);
 
     foreach(EntityType *type, childEntityTypes) {
-        type->d_func()->addInheritedAttributes(aggregatedAttributes);
+        type->d_func()->addInheritedProperties(attributes, relations);
     }
 }
 
@@ -90,7 +103,6 @@ void EntityType::setName(const QString &name)
     if(d->name == name)
         return;
     d->name = name;
-    emit nameChanged(name);
 }
 
 LBDatabase::Context *EntityType::context() const
@@ -142,16 +154,35 @@ QList<EntityType *> EntityType::childEntityTypes() const
     return d->childEntityTypes;
 }
 
+QList<Property *> EntityType::properties() const
+{
+    Q_D(const EntityType);
+    return d->properties;
+}
+
 QList<Attribute *> EntityType::attributes() const
 {
     Q_D(const EntityType);
     return d->attributes;
 }
 
-QList<Attribute *> EntityType::aggregatedAttributes() const
+QList<Relation *> EntityType::relations() const
 {
     Q_D(const EntityType);
-    return d->aggregatedAttributes;
+    return d->relations;
+}
+
+bool EntityType::inherits(EntityType *entityType) const
+{
+    Q_D(const EntityType);
+
+    if(d->parentEntityType == entityType || this == entityType)
+        return true;
+
+    if(!d->parentEntityType || !entityType)
+        return false;
+
+    return d->parentEntityType->inherits(entityType);
 }
 
 void EntityType::setParentEntityTypeId(int id)
@@ -165,15 +196,21 @@ void EntityType::setParentEntityTypeId(int id)
 void EntityType::addAttribute(Attribute *attribute)
 {
     Q_D(EntityType);
+    d->properties.append(attribute);
     d->attributes.append(attribute);
-    d->aggregatedAttributes.append(attribute);
 }
 
-void EntityType::addAttributesToChildren()
+void EntityType::addRelation(Relation *relation)
 {
     Q_D(EntityType);
-    d->addInheritedAttributes(QList<Attribute *>());
+    d->properties.append(relation);
+    d->relations.append(relation);
+}
 
+void EntityType::addPropertiesToChildren()
+{
+    Q_D(EntityType);
+    d->addInheritedProperties(QList<Attribute *>(), QList<Relation *>());
 }
 
 } // namespace LBDatabase

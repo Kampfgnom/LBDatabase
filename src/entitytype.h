@@ -7,6 +7,8 @@ namespace LBDatabase {
 
 class Attribute;
 class Context;
+class Property;
+class Relation;
 class Row;
 class Storage;
 
@@ -25,16 +27,18 @@ public:
 
     QList<EntityType *> childEntityTypes() const;
 
+    QList<Property *> properties() const;
     QList<Attribute *> attributes() const;
-    QList<Attribute *> aggregatedAttributes() const;
+    QList<Relation *> relations() const;
 
-Q_SIGNALS:
-    void nameChanged(QString name);
+    bool inherits(EntityType *entityType) const;
+
 
 private:
     friend class ContextPrivate;
     friend class StoragePrivate;
     friend class AttributePrivate;
+    friend class RelationPrivate;
 
     void setName(const QString &name);
     void setContext(Context *context);
@@ -42,7 +46,8 @@ private:
     void setParentEntityType(EntityType *type);
     void setParentEntityTypeId(int id);
     void addAttribute(Attribute *attribute);
-    void addAttributesToChildren();
+    void addRelation(Relation *relation);
+    void addPropertiesToChildren();
 
     EntityTypePrivate * const d_ptr;
     Q_DECLARE_PRIVATE(EntityType)

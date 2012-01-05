@@ -17,7 +17,12 @@ HEADERS += \
     context.h \
     entitytype.h \
     attribute.h \
-    attributevalue.h
+    attributevalue.h \
+    relation.h \
+    property.h \
+    propertyvalue.h \
+    relationvalue.h \
+    relationinversevalue.h
 
 SOURCES += \
     column.cpp \
@@ -29,7 +34,12 @@ SOURCES += \
     context.cpp \
     entitytype.cpp \
     attribute.cpp \
-    attributevalue.cpp
+    attributevalue.cpp \
+    relation.cpp \
+    property.cpp \
+    propertyvalue.cpp \
+    relationvalue.cpp \
+    relationinversevalue.cpp
 
 OTHER_FILES +=
 
