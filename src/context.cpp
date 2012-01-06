@@ -30,6 +30,7 @@ class ContextPrivate {
     void initializeEntityHierarchy();
     void loadEntities();
     void initializeRelations();
+    void fillRelations();
 
     Row *row;
     Storage *storage;
@@ -83,13 +84,6 @@ void ContextPrivate::loadEntities()
     }
 }
 
-void ContextPrivate::initializeRelations()
-{
-    foreach(Entity *entity, entities) {
-        entity->initializeRelations();
-    }
-}
-
 /******************************************************************************
 ** Context
 */
@@ -106,8 +100,6 @@ Context::Context(Row *row, Storage *parent) :
 
 Context::~Context()
 {
-    Q_D(Context);
-    delete d;
 }
 
 QString Context::name() const
@@ -195,12 +187,6 @@ void Context::loadEntities()
 {
     Q_D(Context);
     d->loadEntities();
-}
-
-void Context::initializeRelations()
-{
-    Q_D(Context);
-    d->initializeRelations();
 }
 
 /*!

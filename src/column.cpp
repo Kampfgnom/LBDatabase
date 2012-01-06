@@ -91,8 +91,6 @@ Column::Column(const QSqlField &field, Table *table) :
 */
 Column::~Column()
 {
-    Q_D(Column);
-    delete d;
 }
 
 /*!

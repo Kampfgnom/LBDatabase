@@ -4,6 +4,7 @@
 #include <QObject>
 
 #include <QMetaType>
+#include <QSharedPointer>
 
 class QSqlDatabase;
 class QSqlQuery;
@@ -51,7 +52,7 @@ private:
 
     void setOpen(bool open);
 
-    DatabasePrivate * const d_ptr;
+    QScopedPointer<DatabasePrivate> d_ptr;
     Q_DECLARE_PRIVATE(Database)
     Q_DISABLE_COPY(Database)
 };

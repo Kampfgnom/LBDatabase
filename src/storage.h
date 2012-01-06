@@ -22,29 +22,30 @@ public:
 
     ~Storage();
 
-    Database *database() const;
-
-    QString name() const;
-
-    void setFileName(const QString &fileName);
-    QString fileName() const;
-
-    EntityType *entityType(int id) const;
-
-    Context *context(int id) const;
-    Context *context(const QString &name) const;
-    QList<Context *> contexts() const;
-
-    Attribute *attribute(int id) const;
-
     bool open();
 
+    Database *database() const;
+    QString name() const;
+    QString fileName() const;
+
+    QList<Context *> contexts() const;
+
 private:
-    explicit Storage(QObject *parent = 0);
+    friend class EntityTypePrivate;
+    friend class ContextPrivate;
+    friend class EntityPrivate;
+    friend class AttributePrivate;
+    friend class RelationPrivate;
+
     explicit Storage(const QString &fileName, QObject *parent = 0);
 
-    StoragePrivate * const d_ptr;
+    Context *context(int id) const;
+    EntityType *entityType(int id) const;
+    Attribute *attribute(int id) const;
+
+    QScopedPointer<StoragePrivate> d_ptr;
     Q_DECLARE_PRIVATE(Storage)
+    Q_DISABLE_COPY(Storage)
 };
 
 } // namespace LBDatabase

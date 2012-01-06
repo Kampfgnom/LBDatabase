@@ -1,6 +1,8 @@
 #include "attribute.h"
 
+#include "attributevalue.h"
 #include "context.h"
+#include "entity.h"
 #include "entitytype.h"
 #include "row.h"
 #include "storage.h"
@@ -12,7 +14,6 @@ namespace LBDatabase {
 */
 namespace {
 const QString NameColumn("name");
-const QString TypeColumn("type");
 const QString DisplayNameColumn("displayName");
 const QString EntityTypeIdColumn("entityTypeId");
 const QString PrefetchStrategyColumn("prefetchStrategy");
@@ -23,6 +24,7 @@ class AttributePrivate {
     AttributePrivate() : prefetchStrategy(Attribute::PrefetchOnStartup), visibility(Attribute::Visible) {}
 
     void init();
+    void addPropertyValueToEntities();
 
     Row *row;
     Storage *storage;
@@ -30,7 +32,6 @@ class AttributePrivate {
     QString displayName;
     EntityType *entityType;
 
-    Attribute::Type type;
     Attribute::PrefetchStrategy prefetchStrategy;
     Attribute::Visibility visibility;
 
@@ -45,11 +46,18 @@ void AttributePrivate::init()
     displayName = row->data(DisplayNameColumn).toString();
     prefetchStrategy = static_cast<Attribute::PrefetchStrategy>(row->data(PrefetchStrategyColumn).toInt());
     visibility  = static_cast<Attribute::Visibility>(row->data(VisibilityColumn).toInt());
-    type  = static_cast<Attribute::Type>(row->data(TypeColumn).toInt());
 
     entityType = storage->entityType(row->data(EntityTypeIdColumn).toInt());
     entityType->addAttribute(q);
     entityType->context()->addAttribute(q);
+}
+
+void AttributePrivate::addPropertyValueToEntities()
+{
+    Q_Q(Attribute);
+    foreach(Entity *entity, entityType->entities()) {
+        entity->addAttributeValue(new AttributeValue(q, entity));
+    }
 }
 
 /******************************************************************************
@@ -66,25 +74,20 @@ Attribute::Attribute(Row *row, Storage *parent) :
     d->init();
 }
 
-Attribute::~Attribute()
+void Attribute::addPropertyValueToEntities()
 {
     Q_D(Attribute);
-    delete d;
+    d->addPropertyValueToEntities();
+}
+
+Attribute::~Attribute()
+{
 }
 
 int Attribute::id() const
 {
     Q_D(const Attribute);
     return d->row->id();
-}
-
-void Attribute::setName(const QString &name)
-{
-    Q_D(Attribute);
-    if(d->name == name)
-        return;
-    d->name = name;
-    emit nameChanged(name);
 }
 
 QString Attribute::name() const

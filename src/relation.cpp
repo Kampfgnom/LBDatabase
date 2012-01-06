@@ -2,10 +2,15 @@
 
 #include "attribute.h"
 #include "context.h"
+#include "database.h"
 #include "entity.h"
 #include "entitytype.h"
+#include "relationvalue_p.h"
+#include "relationvalueleft.h"
+#include "relationvalueright.h"
 #include "row.h"
 #include "storage.h"
+#include "table.h"
 
 namespace LBDatabase {
 
@@ -26,10 +31,13 @@ class RelationPrivate {
     RelationPrivate() :
         entityTypeLeft(0), entityTypeRight(0),
         cardinality(Relation::OneToOne),
-        direction(Relation::LeftToRight)
+        direction(Relation::LeftToRight),
+        relationTable(0)
     {}
 
     void init();
+    void addPropertyValueToEntities();
+    void initializeManyToManyRelation();
 
     Row *row;
     Storage *storage;
@@ -41,6 +49,8 @@ class RelationPrivate {
     EntityType *entityTypeRight;
     Relation::Cardinality cardinality;
     Relation::Direction direction;
+
+    Table *relationTable;
 
     Relation * q_ptr;
     Q_DECLARE_PUBLIC(Relation)
@@ -58,6 +68,8 @@ void RelationPrivate::init()
     cardinality = static_cast<Relation::Cardinality>(row->data(CardinalityColumn).toInt());
     direction = static_cast<Relation::Direction>(row->data(DirectionColumn).toInt());
 
+    relationTable = storage->database()->table(name);
+
     if(entityTypeLeft) {
         entityTypeLeft->addRelation(q);
         entityTypeLeft->context()->addRelation(q);
@@ -65,6 +77,33 @@ void RelationPrivate::init()
     if(entityTypeRight) {
         entityTypeRight->addRelation(q);
         entityTypeRight->context()->addRelation(q);
+    }
+}
+
+void RelationPrivate::addPropertyValueToEntities()
+{
+    Q_Q(Relation);
+    foreach(Entity *entity, entityTypeLeft->entities()) {
+        entity->addRelationValue(new RelationValueLeft(q, entity));
+    }
+    foreach(Entity *entity, entityTypeRight->entities()) {
+        entity->addRelationValue(new RelationValueRight(q, entity));
+    }
+}
+
+void RelationPrivate::initializeManyToManyRelation()
+{
+    Q_Q(Relation);
+    foreach(Row *row, relationTable->rows()) {
+        int leftId = row->data(entityTypeLeft->name()).toInt();
+        int rightId = row->data(entityTypeRight->name()).toInt();
+        Entity *leftEntity = entityTypeLeft->context()->entity(leftId);
+        Entity *rightEntity = entityTypeRight->context()->entity(rightId);
+
+        RelationValuePrivate *leftValue = qobject_cast<RelationValue *>(leftEntity->propertyValue(q))->d_func();
+        RelationValuePrivate *rightValue = qobject_cast<RelationValue *>(rightEntity->propertyValue(q))->d_func();
+        leftValue->addOtherEntity(rightEntity);
+        rightValue->addOtherEntity(leftEntity);
     }
 }
 
@@ -84,8 +123,6 @@ Relation::Relation(Row *row, Storage *parent) :
 
 Relation::~Relation()
 {
-    Q_D(Relation);
-    delete d;
 }
 
 int Relation::id() const
@@ -135,6 +172,24 @@ Relation::Direction Relation::direction() const
 {
     Q_D(const Relation);
     return d->direction;
+}
+
+Table *Relation::relationTable() const
+{
+    Q_D(const Relation);
+    return d->relationTable;
+}
+
+void Relation::addPropertyValueToEntities()
+{
+    Q_D(Relation);
+    return d->addPropertyValueToEntities();
+}
+
+void Relation::initializeManyToManyRelation()
+{
+    Q_D(Relation);
+    return d->initializeManyToManyRelation();
 }
 
 } // namespace LBDatabase

@@ -13,15 +13,21 @@ class AttributeValue : public PropertyValue
 {
     Q_OBJECT
 public:
-    explicit AttributeValue(Attribute *attribute, Entity *parent);
     ~AttributeValue();
 
+    Property *property() const;
     QVariant data(int role = Qt::DisplayRole) const;
 
-    Property *property() const;
 private:
-    AttributeValuePrivate * const d_ptr;
+    friend class AttributePrivate;
+
+    explicit AttributeValue(Attribute *attribute, Entity *parent);
+
+    void fetchValue();
+
+    QScopedPointer<AttributeValuePrivate> d_ptr;
     Q_DECLARE_PRIVATE(AttributeValue)
+    Q_DISABLE_COPY(AttributeValue)
 };
 
 } // namespace LBDatabase

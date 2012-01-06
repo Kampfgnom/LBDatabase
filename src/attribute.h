@@ -24,30 +24,25 @@ public:
         Hidden
     };
 
-    enum Type {
-        Simple,
-        Relation
-    };
-
-    explicit Attribute(Row *row, Storage *parent);
     ~Attribute();
 
     int id() const;
-    QString name() const;
     QString displayName(const Context *context = 0) const;
+
+    QString name() const;
     PrefetchStrategy prefetchStrategy() const;
     Visibility visibility() const;
-
-Q_SIGNALS:
-    void nameChanged(QString name);
 
 private:
     friend class StoragePrivate;
 
-    void setName(const QString &name);
+    explicit Attribute(Row *row, Storage *parent);
 
-    AttributePrivate * const d_ptr;
+    virtual void addPropertyValueToEntities();
+
+    QScopedPointer<AttributePrivate> d_ptr;
     Q_DECLARE_PRIVATE(Attribute)
+    Q_DISABLE_COPY(Attribute)
 };
 
 } // namespace LBDatabase

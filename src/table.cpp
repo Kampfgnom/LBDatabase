@@ -299,8 +299,6 @@ Table::Table(const QString &name, Database *database) :
   */
 Table::~Table()
 {
-    Q_D(Table);
-    delete d;
 }
 
 /*!

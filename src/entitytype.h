@@ -7,6 +7,7 @@ namespace LBDatabase {
 
 class Attribute;
 class Context;
+class Entity;
 class Property;
 class Relation;
 class Row;
@@ -17,7 +18,6 @@ class EntityType : public QObject
 {
     Q_OBJECT
 public:
-    explicit EntityType(LBDatabase::Row *row, Storage *parent);
     ~EntityType();
 
     QString name() const;
@@ -31,14 +31,18 @@ public:
     QList<Attribute *> attributes() const;
     QList<Relation *> relations() const;
 
-    bool inherits(EntityType *entityType) const;
+    QList<Entity *> entities() const;
 
+    bool inherits(EntityType *entityType) const;
 
 private:
     friend class ContextPrivate;
     friend class StoragePrivate;
     friend class AttributePrivate;
     friend class RelationPrivate;
+    friend class EntityPrivate;
+
+    explicit EntityType(LBDatabase::Row *row, Storage *parent);
 
     void setName(const QString &name);
     void setContext(Context *context);
@@ -48,9 +52,11 @@ private:
     void addAttribute(Attribute *attribute);
     void addRelation(Relation *relation);
     void addPropertiesToChildren();
+    void addEntity(Entity *entity);
 
-    EntityTypePrivate * const d_ptr;
+    QScopedPointer<EntityTypePrivate> d_ptr;
     Q_DECLARE_PRIVATE(EntityType)
+    Q_DISABLE_COPY(EntityType)
 };
 
 } // namespace LBDatabase

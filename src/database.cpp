@@ -165,6 +165,8 @@ QList<Database *> Database::instances()
   Members
   */
 /*!
+  \internal
+
   Constructs a new database which works on \a fileName.
 */
 Database::Database(const QString &fileName, QObject *parent) :
@@ -185,7 +187,6 @@ Database::~Database()
 {
     Q_D(Database);
     qDebug() << "Database::~Database: Closing database file" << d->fileName;
-    delete d;
 }
 
 /*!

@@ -19,7 +19,6 @@ class Context : public QAbstractTableModel
 {
     Q_OBJECT
 public:
-    explicit Context(Row *row, Storage *parent);
     ~Context();
 
     QString name() const;
@@ -47,6 +46,8 @@ private:
     friend class AttributePrivate;
     friend class RelationPrivate;
 
+    explicit Context(Row *row, Storage *parent);
+
     void addEntityType(EntityType *type);
     void addAttribute(Attribute *attribute);
     void addRelation(Relation *relation);
@@ -54,9 +55,11 @@ private:
     void initializeEntityHierarchy();
     void loadEntities();
     void initializeRelations();
+    void fillRelations();
 
-    ContextPrivate * const d_ptr;
+    QScopedPointer<ContextPrivate> d_ptr;
     Q_DECLARE_PRIVATE(Context)
+    Q_DISABLE_COPY(Context)
 };
 
 } // namespace LBDatabase

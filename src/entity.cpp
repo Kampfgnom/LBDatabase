@@ -5,7 +5,7 @@
 #include "context.h"
 #include "entitytype.h"
 #include "relation.h"
-#include "relationinversevalue.h"
+#include "relationvalueright.h"
 #include "relationvalue.h"
 #include "row.h"
 #include "storage.h"
@@ -36,8 +36,6 @@ class EntityPrivate {
 
     QList<AttributeValue *> attributeValues;
     QList<RelationValue *> relationValues;
-    QList<RelationInverseValue *> relationInverseValues;
-
 
     Entity * q_ptr;
     Q_DECLARE_PUBLIC(Entity)
@@ -48,43 +46,7 @@ void EntityPrivate::init()
     Q_Q(Entity);
     storage = context->storage();
     entityType = storage->entityType(row->data(EntityTypeIdColumn).toInt());
-
-    foreach(Attribute *attribute, entityType->attributes()) {
-        AttributeValue *value = new AttributeValue(attribute, q);
-        propertyValues.insert(attribute, value);
-        attributeValues.append(value);
-    }
-    foreach(Relation *relation, entityType->relations()) {
-        PropertyValue *value = 0;
-        if(entityType->inherits(relation->entityTypeLeft())) {
-            RelationValue *rvalue = new RelationValue(relation, q);
-            relationValues.append(rvalue);
-            qDebug() << "Adding RelationValue to "<< entityType->name() <<" id " << row->id();
-            value = rvalue;
-        }
-        else if(entityType->inherits(relation->entityTypeRight())) {
-            RelationInverseValue *rvalue = new RelationInverseValue(relation, q);
-            relationInverseValues.append(rvalue);
-            qDebug() << "Adding RelationInverseValue to "<< entityType->name() <<" id " << row->id();
-            value = rvalue;
-        }
-        propertyValues.insert(relation, value);
-    }
-}
-
-void EntityPrivate::initializeRelations()
-{
-    foreach(RelationValue *value, relationValues) {
-        value->initRelationContent();
-    }
-    foreach(RelationInverseValue *value, relationInverseValues) {
-        value->initRelationContent();
-    }
-}
-
-void EntityPrivate::initializeRelationContent()
-{
-
+    entityType->addEntity(q);
 }
 
 /******************************************************************************
@@ -103,8 +65,6 @@ Entity::Entity(Row *row, Context *parent) :
 
 Entity::~Entity()
 {
-    Q_D(Entity);
-    delete d;
 }
 
 QString Entity::displayName(int role) const
@@ -160,16 +120,18 @@ Row *Entity::row() const
     return d->row;
 }
 
-void Entity::initializeRelations()
+void Entity::addAttributeValue(AttributeValue *value)
 {
     Q_D(Entity);
-    d->initializeRelations();
+    d->propertyValues.insert(value->property(), value);
+    d->attributeValues.append(value);
 }
 
-void Entity::initializeRelationContent()
+void Entity::addRelationValue(RelationValue *value)
 {
     Q_D(Entity);
-    d->initializeRelationContent();
+    d->propertyValues.insert(value->property(), value);
+    d->relationValues.append(value);
 }
 
 } // namespace LBDatabase

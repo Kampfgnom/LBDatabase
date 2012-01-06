@@ -96,8 +96,6 @@ Row::Row(const QSqlQuery &query, Table *table) :
   */
 Row::~Row()
 {
-    Q_D(Row);
-    delete d;
 }
 
 /*!
@@ -119,6 +117,10 @@ QVariant Row::data(int column) const
     return d->values.at(column);
 }
 
+/*!
+  Returns the data stored in the row in the column named \a column or an invalid
+  QVariant if this column does not exist in the table of the row.
+  */
 QVariant Row::data(const QString &column) const
 {
     Q_D(const Row);
@@ -133,11 +135,12 @@ QVariant Row::data(const QString &column) const
 /*!
   Sets the content stored in the database in this row in the Column at index
   \a column to \a data.
+  Does nothing if no such column exists in the table of the row.
   */
 void Row::setData(int column, const QVariant &data)
 {
     Q_D(Row);
-    if(d->values.at(column) == data)
+    if(column >= d->values.size() || d->values.at(column) == data)
         return;
 
     d->values.replace(column, data);

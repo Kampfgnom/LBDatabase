@@ -20,22 +20,27 @@ public:
     QString name() const;
     Database *database() const;
 
+
     Column *column(int column) const;
     Column *column(const QString &column) const;
     QList<Column *> columns() const;
     QStringList columnNames() const;
 
-    void changeColumnName(const QString &name, const QString &newName);
     Column *addColumn(const QString &name, const QString &sqlType, const QVariant &defaultValue = QVariant());
     void removeColumn(const QString &name);
+    void changeColumnName(const QString &name, const QString &newName);
 
-    void deleteRow(int id);
-    Row *appendRow();
+
     Row *row(int id) const;
     Row *rowAt(int index) const;
     QList<Row *> rows() const;
 
+    Row *appendRow();
+    void deleteRow(int id);
+
+
     QList<QVariant> select(const QString &column, bool distinct = false);
+
 
     // QAbstractTableModel
     QVariant data(const QModelIndex &index, int role) const;
@@ -52,7 +57,7 @@ protected:
 
     Table(const QString &name, Database *database);
 
-    TablePrivate * const d_ptr;
+    QScopedPointer<TablePrivate> d_ptr;
     Q_DECLARE_PRIVATE(Table)
     Q_DISABLE_COPY(Table)
 };

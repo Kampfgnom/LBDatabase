@@ -41,7 +41,7 @@ Q_SIGNALS:
     void nameChanged(QString name);
     void indexChanged(int index);
 
-protected:
+private:
     friend class TablePrivate;
 
     explicit Column(const QSqlField &field, Table *table);
@@ -49,8 +49,7 @@ protected:
     void setName(const QString &name);
     void setIndex(int index);
 
-private:
-    ColumnPrivate * const d_ptr;
+    QScopedPointer<ColumnPrivate> d_ptr;
     Q_DECLARE_PRIVATE(Column)
     Q_DISABLE_COPY(Column)
 };

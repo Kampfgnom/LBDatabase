@@ -3,7 +3,9 @@
 #include "attribute.h"
 #include "context.h"
 #include "database.h"
+#include "entity.h"
 #include "entitytype.h"
+#include "propertyvalue.h"
 #include "relation.h"
 #include "row.h"
 #include "table.h"
@@ -50,6 +52,7 @@ class StoragePrivate {
     QHash<int, EntityType *> entityTypes;
     QHash<int, Attribute *> attributes;
     QHash<int, Relation *> relations;
+    QList<Property *> properties;
 
     Storage * q_ptr;
     Q_DECLARE_PUBLIC(Storage)
@@ -59,6 +62,7 @@ QHash<QString, Storage*> StoragePrivate::instances = QHash<QString, Storage*>();
 
 void StoragePrivate::init()
 {
+    database = Database::instance(fileName);
 }
 
 bool StoragePrivate::open()
@@ -99,6 +103,11 @@ bool StoragePrivate::open()
     Row *metaDataRow = metaDataTable->rowAt(0);
     name = metaDataRow->data(NameColumn).toString();
 
+    contexts.reserve(contextsTable->rows().size());
+    entityTypes.reserve(entitiesTable->rows().size());
+    attributes.reserve(attributesTable->rows().size());
+    properties.reserve(attributesTable->rows().size() + relationsTable->rows().size());
+
     foreach(Row *row, contextsTable->rows()) {
         Context *context = new Context(row, q);
         contexts.insert(row->id(), context);
@@ -112,11 +121,13 @@ bool StoragePrivate::open()
     foreach(Row *row, attributesTable->rows()) {
         Attribute *attribute = new Attribute(row, q);
         attributes.insert(row->id(), attribute);
+        properties.append(attribute);
     }
 
     foreach(Row *row, relationsTable->rows()) {
         Relation *relation = new Relation(row, q);
         relations.insert(row->id(), relation);
+        properties.append(relation);
     }
 
     foreach(Context *context, contexts.values()) {
@@ -124,8 +135,16 @@ bool StoragePrivate::open()
         context->loadEntities();
     }
 
+    foreach(Property *property, properties) {
+        property->addPropertyValueToEntities();
+    }
+
     foreach(Context *context, contexts.values()) {
-        context->initializeRelations();
+        foreach(Entity *entity, context->entities()) {
+            foreach(PropertyValue *value, entity->propertieValues()) {
+                value->fetchValue();
+            }
+        }
     }
 
     return true;
@@ -152,8 +171,6 @@ Storage *Storage::instance(const QString &fileName)
 
 Storage::~Storage()
 {
-    Q_D(Storage);
-    delete d;
 }
 
 Database *Storage::database() const
@@ -168,33 +185,14 @@ QString Storage::name() const
     return d->name;
 }
 
-Storage::Storage(QObject *parent) :
-    QObject(parent),
-    d_ptr(new StoragePrivate)
-{
-    Q_D(Storage);
-    d->q_ptr = this;
-    d->init();
-}
-
 Storage::Storage(const QString &fileName, QObject *parent) :
     QObject(parent),
     d_ptr(new StoragePrivate)
 {
     Q_D(Storage);
     d->q_ptr = this;
-    d->init();
-    setFileName(fileName);
-}
-
-void Storage::setFileName(const QString &fileName)
-{
-    Q_D(Storage);
-    if(d->fileName == fileName)
-        return;
-
     d->fileName = fileName;
-    d->database = Database::instance(fileName);
+    d->init();
 }
 
 QString Storage::fileName() const

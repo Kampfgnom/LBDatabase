@@ -33,8 +33,9 @@ private:
 
     explicit Row(const QSqlQuery &query, Table *table);
 
-    RowPrivate * const d_ptr;
+    QScopedPointer<RowPrivate> d_ptr;
     Q_DECLARE_PRIVATE(Row)
+    Q_DISABLE_COPY(Row)
 };
 
 } // namespace LBDatabase

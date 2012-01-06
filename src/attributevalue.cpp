@@ -15,6 +15,7 @@ class AttributeValuePrivate {
     AttributeValuePrivate() {}
 
     void init();
+    void fetchValue();
 
     Entity *entity;
     Attribute *attribute;
@@ -27,9 +28,11 @@ class AttributeValuePrivate {
 
 void AttributeValuePrivate::init()
 {
-    if(attribute->prefetchStrategy() == Attribute::PrefetchOnStartup) {
-        data = entity->row()->data(attribute->name());
-    }
+}
+
+void AttributeValuePrivate::fetchValue()
+{
+    data = entity->row()->data(attribute->name());
 }
 
 /******************************************************************************
@@ -48,8 +51,6 @@ AttributeValue::AttributeValue(Attribute *attribute, Entity *parent) :
 
 AttributeValue::~AttributeValue()
 {
-    Q_D(AttributeValue);
-    delete d;
 }
 
 QVariant AttributeValue::data(int role) const
@@ -62,7 +63,13 @@ QVariant AttributeValue::data(int role) const
 Property *AttributeValue::property() const
 {
     Q_D(const AttributeValue);
-    d->attribute;
+    return d->attribute;
+}
+
+void AttributeValue::fetchValue()
+{
+    Q_D(AttributeValue);
+    d->fetchValue();
 }
 
 } // namespace LBDatabase

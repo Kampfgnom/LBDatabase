@@ -13,21 +13,23 @@ class RelationValue : public PropertyValue
 {
     Q_OBJECT
 public:
-    explicit RelationValue(Relation *relation, Entity *parent);
     ~RelationValue();
 
-    QVariant data(int role = Qt::DisplayRole) const;
-
     Property *property() const;
-private:
-    friend class RelationInverseValuePrivate;
-    friend class EntityPrivate;
 
-    void addEntityFromInverse(Entity *entity);
-    void initRelationContent();
+    QList<Entity *> entities() const;
 
-    RelationValuePrivate * const d_ptr;
+protected:
+    friend class RelationPrivate;
+
+    explicit RelationValue(Relation *relation, Entity *parent);
+    explicit RelationValue(RelationValuePrivate &dd, Relation *relation, Entity *parent);
+
+    void fetchValue();
+
+    QScopedPointer<RelationValuePrivate> d_ptr;
     Q_DECLARE_PRIVATE(RelationValue)
+    Q_DISABLE_COPY(RelationValue)
 };
 
 } // namespace LBDatabase

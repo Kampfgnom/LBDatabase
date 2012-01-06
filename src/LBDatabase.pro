@@ -22,7 +22,9 @@ HEADERS += \
     property.h \
     propertyvalue.h \
     relationvalue.h \
-    relationinversevalue.h
+    relationvalue_p.h \
+    relationvalueright.h \
+    relationvalueleft.h
 
 SOURCES += \
     column.cpp \
@@ -39,7 +41,8 @@ SOURCES += \
     property.cpp \
     propertyvalue.cpp \
     relationvalue.cpp \
-    relationinversevalue.cpp
+    relationvalueright.cpp \
+    relationvalueleft.cpp
 
 OTHER_FILES +=
 

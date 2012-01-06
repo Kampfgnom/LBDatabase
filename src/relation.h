@@ -9,6 +9,7 @@ class Context;
 class EntityType;
 class Row;
 class Storage;
+class Table;
 
 class RelationPrivate;
 class Relation : public Property
@@ -27,22 +28,32 @@ public:
         ManyToMany
     };
 
-    explicit Relation(Row *row, Storage *parent);
     ~Relation();
 
     int id() const;
-    QString name() const;
     QString displayName(const Context *context = 0) const;
+
+    QString name() const;
     EntityType *entityTypeLeft() const;
     EntityType *entityTypeRight() const;
     Cardinality cardinality() const;
     Direction direction() const;
 
+    Table *relationTable() const;
+
 private:
     friend class StoragePrivate;
+    friend class RelationValueRightPrivate;
 
-    RelationPrivate * const d_ptr;
+    explicit Relation(Row *row, Storage *parent);
+
+    virtual void addPropertyValueToEntities();
+
+    void initializeManyToManyRelation();
+
+    QScopedPointer<RelationPrivate> d_ptr;
     Q_DECLARE_PRIVATE(Relation)
+    Q_DISABLE_COPY(Relation)
 };
 
 } // namespace LBDatabase

@@ -13,9 +13,13 @@ class Property : public QObject
 public:
     explicit Property(QObject *parent = 0);
 
+    virtual int id() const = 0;
     virtual QString displayName(const Context *context = 0) const = 0;
 
-    virtual int id() const = 0;
+private:
+    friend class StoragePrivate;
+
+    virtual void addPropertyValueToEntities() = 0;
 };
 
 } // namespace LBDatabase

@@ -36,6 +36,7 @@ class EntityTypePrivate {
     QList<Property *> properties;
     QList<Attribute *> attributes;
     QList<Relation *> relations;
+    QList<Entity *> entities;
 
     EntityType * q_ptr;
     Q_DECLARE_PUBLIC(EntityType)
@@ -87,8 +88,6 @@ EntityType::EntityType(Row *row, Storage *parent) :
 
 EntityType::~EntityType()
 {
-    Q_D(EntityType);
-    delete d;
 }
 
 QString EntityType::name() const
@@ -172,6 +171,12 @@ QList<Relation *> EntityType::relations() const
     return d->relations;
 }
 
+QList<Entity *> EntityType::entities() const
+{
+    Q_D(const EntityType);
+    return d->entities;
+}
+
 bool EntityType::inherits(EntityType *entityType) const
 {
     Q_D(const EntityType);
@@ -211,6 +216,14 @@ void EntityType::addPropertiesToChildren()
 {
     Q_D(EntityType);
     d->addInheritedProperties(QList<Attribute *>(), QList<Relation *>());
+}
+
+void EntityType::addEntity(Entity *entity)
+{
+    Q_D(EntityType);
+    d->entities.append(entity);
+    if(d->parentEntityType)
+        d->parentEntityType->addEntity(entity);
 }
 
 } // namespace LBDatabase
