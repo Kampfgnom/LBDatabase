@@ -56,7 +56,7 @@ void ContextPrivate::initializeEntityHierarchy()
     EntityType *parentType;
     foreach(EntityType *type, entityTypes) {
         parentType = storage->entityType(type->parentEntityTypeId());
-        if(Q_LIKELY(parentType)) {
+        if(parentType) {
             type->setParentEntityType(parentType);
             parentType->addChildEntityType(type);
         }

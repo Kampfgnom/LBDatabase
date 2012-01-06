@@ -217,6 +217,14 @@ void TablePrivate::deleteRow(int id)
     QSqlQuery query(database->sqlDatabase());
     query.exec(QLatin1String("DELETE FROM ")+name+QLatin1String(" WHERE id = '")+QString::number(id)+QLatin1String("';"));
     checkSqlError(query);
+
+    Q_Q(Table);
+    int index = rows.indexOf(rowsById.value(id));
+    q->beginRemoveRows(QModelIndex(), index, index);
+    Row *row = rows.takeAt(index);
+    rowsById.remove(id);
+    row->deleteLater();
+    q->endRemoveRows();
 }
 
 QList<QVariant> TablePrivate::select(const QString &column, bool distinct) const
@@ -369,6 +377,7 @@ void Table::deleteRow(int id)
 {
     Q_D(Table);
     d->deleteRow(id);
+    database()->setDirty(true);
 }
 
 /*!
