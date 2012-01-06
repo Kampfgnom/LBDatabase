@@ -7,22 +7,22 @@
 #include "row.h"
 #include "storage.h"
 
+#include <QDebug>
+
 namespace LBDatabase {
 
 /******************************************************************************
 ** EntityTypePrivate
 */
-namespace {
-const QString ContextColumn("contextId");
-const QString NameColumn("name");
-const QString ParentEntityTypeIdColumn("parentEntityTypeId");
-}
+const QString EntityType::ContextColumn("contextId");
+const QString EntityType::NameColumn("name");
+const QString EntityType::ParentEntityTypeIdColumn("parentEntityTypeId");
 
 class EntityTypePrivate {
     EntityTypePrivate() : context(0), parentEntityType(0) {}
 
     void init();
-    void addInheritedProperties(QList<Attribute *> attributes, QList<Relation *> newRelations);
+    void addInheritedProperties(EntityType *parent);
 
     Row *row;
     QString name;
@@ -45,18 +45,24 @@ class EntityTypePrivate {
 void EntityTypePrivate::init()
 {
     Q_Q(EntityType);
-    name = row->data(NameColumn).toString();
-    parentEntityTypeId = row->data(ParentEntityTypeIdColumn).toInt();
-    int contextId = row->data(ContextColumn).toInt();
+    name = row->data(EntityType::NameColumn).toString();
+    parentEntityTypeId = row->data(EntityType::ParentEntityTypeIdColumn).toInt();
+    int contextId = row->data(EntityType::ContextColumn).toInt();
     context = storage->context(contextId);
     context->addEntityType(q);
 }
 
-void EntityTypePrivate::addInheritedProperties(QList<Attribute *> newAttributes, QList<Relation *> newRelations)
+void EntityTypePrivate::addInheritedProperties(EntityType *parent)
 {
-    properties.reserve(attributes.size() + newRelations.size());
-    attributes.reserve(attributes.size());
+    Q_Q(EntityType);
+
+    QList<Relation *> newRelations = parent->relations();
+    QList<Attribute *> newAttributes = parent->attributes();
+
+    properties.reserve(newAttributes.size() + newRelations.size());
+    attributes.reserve(newAttributes.size());
     relations.reserve(newRelations.size());
+
     foreach(Attribute *attribute, newAttributes) {
         properties.append(attribute);
     }
@@ -68,7 +74,7 @@ void EntityTypePrivate::addInheritedProperties(QList<Attribute *> newAttributes,
     attributes.append(newAttributes);
 
     foreach(EntityType *type, childEntityTypes) {
-        type->d_func()->addInheritedProperties(attributes, relations);
+        type->d_func()->addInheritedProperties(q);
     }
 }
 
@@ -88,6 +94,12 @@ EntityType::EntityType(Row *row, Storage *parent) :
 
 EntityType::~EntityType()
 {
+}
+
+int EntityType::id() const
+{
+    Q_D(const EntityType);
+    return d->row->id();
 }
 
 QString EntityType::name() const
@@ -171,6 +183,11 @@ QList<Relation *> EntityType::relations() const
     return d->relations;
 }
 
+Attribute *EntityType::addAttribute(const QString &name)
+{
+    qWarning() << "EntityType::addAttribute: IMPLEMENT ME";
+}
+
 QList<Entity *> EntityType::entities() const
 {
     Q_D(const EntityType);
@@ -212,10 +229,10 @@ void EntityType::addRelation(Relation *relation)
     d->relations.append(relation);
 }
 
-void EntityType::addPropertiesToChildren()
+void EntityType::addInheritedProperties(EntityType *parent)
 {
     Q_D(EntityType);
-    d->addInheritedProperties(QList<Attribute *>(), QList<Relation *>());
+    d->addInheritedProperties(parent);
 }
 
 void EntityType::addEntity(Entity *entity)

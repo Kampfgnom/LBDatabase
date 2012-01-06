@@ -155,6 +155,22 @@ void Row::setData(int column, const QVariant &data)
 }
 
 /*!
+  Sets the content stored in the database in this row in the Column with the
+  name \a column to \a data.
+  Does nothing if no such column exists in the table of the row.
+  */
+void Row::setData(const QString &column, const QVariant &data)
+{
+    Q_D(const Row);
+
+    Column *c = d->table->column(column);
+    if(!c)
+        return;
+
+    setData(c->index(), data);
+}
+
+/*!
   \internal
 
   Adds a column to the row.

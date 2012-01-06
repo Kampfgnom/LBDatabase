@@ -1,3 +1,4 @@
 .DS_Store
 *.DS_Store*
-src/LBDatabase.pro.user
+src/LBDatabase.pro.userlib/liblbdatabase.a
+lib/liblbdatabase.a

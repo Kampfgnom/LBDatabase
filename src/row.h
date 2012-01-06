@@ -22,6 +22,7 @@ public:
     QVariant data(int column) const;
     QVariant data(const QString &column) const;
     void setData(int column, const QVariant &data);
+    void setData(const QString &column, const QVariant &data);
 
 Q_SIGNALS:
     void dataChanged(int column, QVariant data);

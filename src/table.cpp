@@ -140,7 +140,7 @@ void TablePrivate::changeColumnName(const QString &name, const QString &newName)
     int index = columns.indexOf(column);
     column->setName(newName);
     database->refreshConnection();
-    q->emitHeaderDataChanged(Qt::Horizontal,index,index);
+    emit q->headerDataChanged(Qt::Horizontal,index,index);
 }
 
 void TablePrivate::removeColumn(const QString &name)
