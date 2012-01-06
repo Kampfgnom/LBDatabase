@@ -32,6 +32,8 @@ class ContextPrivate {
     void initializeRelations();
     void fillRelations();
 
+    EntityType *addEntityType(const QString &name, EntityType *parentEntityType);
+
     Row *row;
     Storage *storage;
     QString name;
@@ -64,8 +66,9 @@ void ContextPrivate::initializeEntityHierarchy()
             baseEntityType = type;
         }
     }
-
-    baseEntityType->addPropertiesToChildren();
+    foreach(EntityType *child, baseEntityType->childEntityTypes()) {
+        child->addInheritedProperties(baseEntityType);
+    }
 }
 
 void ContextPrivate::loadEntities()
@@ -84,6 +87,22 @@ void ContextPrivate::loadEntities()
     }
 }
 
+EntityType *ContextPrivate::addEntityType(const QString &name, EntityType *parentEntityType)
+{
+    Q_Q(Context);
+    Row *entityTypeRow = storage->entitiesTable()->appendRow();
+    entityTypeRow->setData(EntityType::NameColumn, QVariant(name));
+    entityTypeRow->setData(EntityType::ParentEntityTypeIdColumn, QVariant(parentEntityType->id()));
+    entityTypeRow->setData(EntityType::ContextColumn, QVariant(row->id()));
+
+    EntityType *type = new EntityType(row, storage);
+    type->setParentEntityType(parentEntityType);
+    parentEntityType->addChildEntityType(type);
+    storage->insertEntityType(type);
+
+    type->addInheritedProperties(parentEntityType);
+}
+
 /******************************************************************************
 ** Context
 */
@@ -100,6 +119,12 @@ Context::Context(Row *row, Storage *parent) :
 
 Context::~Context()
 {
+}
+
+int Context::id() const
+{
+    Q_D(const Context);
+    return d->row->id();
 }
 
 QString Context::name() const
@@ -132,6 +157,12 @@ QList<EntityType *> Context::entityTypes() const
     return d->entityTypes.values();
 }
 
+EntityType *Context::addEntityType(const QString &name, EntityType *parentIntityType)
+{
+    Q_D(Context);
+    return d->addEntityType(name, parentIntityType);
+}
+
 Entity *Context::entity(int id) const
 {
     Q_D(const Context);
@@ -148,6 +179,11 @@ QList<Entity *> Context::entities() const
 {
     Q_D(const Context);
     return d->entities;
+}
+
+Entity *Context::insertEntity(EntityType *type)
+{
+    qWarning() << "Context::addEntityType: IMPLEMENT ME";
 }
 
 void Context::addEntityType(EntityType *type)

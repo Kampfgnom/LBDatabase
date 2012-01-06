@@ -18,8 +18,13 @@ class EntityType : public QObject
 {
     Q_OBJECT
 public:
+    static const QString ContextColumn;
+    static const QString NameColumn;
+    static const QString ParentEntityTypeIdColumn;
+
     ~EntityType();
 
+    int id() const;
     QString name() const;
     Context *context() const;
     EntityType *parentEntityType() const;
@@ -30,6 +35,8 @@ public:
     QList<Property *> properties() const;
     QList<Attribute *> attributes() const;
     QList<Relation *> relations() const;
+
+    Attribute *addAttribute(const QString &name);
 
     QList<Entity *> entities() const;
 
@@ -51,7 +58,7 @@ private:
     void setParentEntityTypeId(int id);
     void addAttribute(Attribute *attribute);
     void addRelation(Relation *relation);
-    void addPropertiesToChildren();
+    void addInheritedProperties(EntityType *parent);
     void addEntity(Entity *entity);
 
     QScopedPointer<EntityTypePrivate> d_ptr;

@@ -11,6 +11,7 @@ class Attribute;
 class Context;
 class Database;
 class EntityType;
+class Table;
 
 class StoragePrivate;
 class Storage : public QObject
@@ -30,6 +31,8 @@ public:
 
     QList<Context *> contexts() const;
 
+    Context *addContext(const QString &name, const QString &baseEntityTypeName);
+
 private:
     friend class EntityTypePrivate;
     friend class ContextPrivate;
@@ -42,6 +45,10 @@ private:
     Context *context(int id) const;
     EntityType *entityType(int id) const;
     Attribute *attribute(int id) const;
+
+    void insertEntityType(EntityType *type);
+
+    Table *entitiesTable() const;
 
     QScopedPointer<StoragePrivate> d_ptr;
     Q_DECLARE_PRIVATE(Storage)

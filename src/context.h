@@ -21,6 +21,7 @@ class Context : public QAbstractTableModel
 public:
     ~Context();
 
+    int id() const;
     QString name() const;
     Storage *storage() const;
 
@@ -28,9 +29,13 @@ public:
     EntityType *entityType(const QString &name) const;
     QList<EntityType *> entityTypes() const;
 
+    EntityType *addEntityType(const QString &name, EntityType *parentIntityType);
+
     Entity *entity(int id) const;
     Entity *entityAt(int index) const;
     QList<Entity *> entities() const;
+
+    Entity *insertEntity(EntityType *type);
 
     // QAbstractTableModel
     QVariant data(const QModelIndex &index, int role) const;

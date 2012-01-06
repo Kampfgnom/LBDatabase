@@ -114,8 +114,7 @@ bool StoragePrivate::open()
     }
 
     foreach(Row *row, entitiesTable->rows()) {
-        EntityType *type = new EntityType(row, q);
-        entityTypes.insert(row->id(), type);
+        q->insertEntityType(new EntityType(row, q));
     }
 
     foreach(Row *row, attributesTable->rows()) {
@@ -219,10 +218,27 @@ QList<Context *> Storage::contexts() const
     return d->contexts.values();
 }
 
+Context *Storage::addContext(const QString &name, const QString &baseEntityTypeName)
+{
+    qWarning() << "Storage::createContext: IMPLEMENT ME";
+}
+
 Attribute *Storage::attribute(int id) const
 {
     Q_D(const Storage);
     return d->attributes.value(id);
+}
+
+void Storage::insertEntityType(EntityType *type)
+{
+    Q_D(Storage);
+    d->entityTypes.insert(type->id(), type);
+}
+
+Table *Storage::entitiesTable() const
+{
+    Q_D(const Storage);
+    return d->entitiesTable;
 }
 
 bool Storage::open()
