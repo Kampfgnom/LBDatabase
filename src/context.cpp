@@ -19,9 +19,7 @@ namespace LBDatabase {
 /******************************************************************************
 ** ContextPrivate
 */
-namespace {
-const QString NameColumn("name");
-}
+const QString Context::NameColumn("name");
 
 class ContextPrivate {
     ContextPrivate() : baseEntityType(0) {}
@@ -31,8 +29,11 @@ class ContextPrivate {
     void loadEntities();
     void initializeRelations();
     void fillRelations();
+    void createBaseEntityType(const QString &name);
 
     EntityType *addEntityType(const QString &name, EntityType *parentEntityType);
+    Entity *insertEntity(EntityType *type);
+
 
     Row *row;
     Storage *storage;
@@ -50,7 +51,8 @@ class ContextPrivate {
 
 void ContextPrivate::init()
 {
-    name = row->data(NameColumn).toString();
+    name = row->data(Context::NameColumn).toString();
+    contextTable = storage->database()->table(name);
 }
 
 void ContextPrivate::initializeEntityHierarchy()
@@ -74,7 +76,6 @@ void ContextPrivate::initializeEntityHierarchy()
 void ContextPrivate::loadEntities()
 {
     Q_Q(Context);
-    contextTable = storage->database()->table(name);
     if(!contextTable)
         return;
 
@@ -89,7 +90,6 @@ void ContextPrivate::loadEntities()
 
 EntityType *ContextPrivate::addEntityType(const QString &name, EntityType *parentEntityType)
 {
-    Q_Q(Context);
     Row *entityTypeRow = storage->entitiesTable()->appendRow();
     entityTypeRow->setData(EntityType::NameColumn, QVariant(name));
     entityTypeRow->setData(EntityType::ParentEntityTypeIdColumn, QVariant(parentEntityType->id()));
@@ -101,6 +101,40 @@ EntityType *ContextPrivate::addEntityType(const QString &name, EntityType *paren
     storage->insertEntityType(type);
 
     type->addInheritedProperties(parentEntityType);
+    return type;
+}
+
+Entity *ContextPrivate::insertEntity(EntityType *type)
+{
+    Q_Q(Context);
+    Row *row = contextTable->appendRow();
+    row->setData(Entity::EntityTypeIdColumn, QVariant(type->id()));
+
+    q->beginInsertRows(QModelIndex(), entities.size(), entities.size());
+    Entity *entity = new Entity(row, q);
+    entities.append(entity);
+    entitiesById.insert(row->id(), entity);
+
+    foreach(Property *property, type->properties()) {
+        property->addPropertyValue(entity);
+    }
+    foreach(PropertyValue *value, entity->propertyValues()) {
+        value->fetchValue();
+    }
+    q->endInsertRows();
+
+    return entity;
+}
+
+void ContextPrivate::createBaseEntityType(const QString &name)
+{
+    Row *entityTypeRow = storage->entitiesTable()->appendRow();
+    entityTypeRow->setData(EntityType::NameColumn, QVariant(name));
+    entityTypeRow->setData(EntityType::ParentEntityTypeIdColumn, QVariant());
+    entityTypeRow->setData(EntityType::ContextColumn, QVariant(row->id()));
+
+    baseEntityType = new EntityType(row, storage);
+    storage->insertEntityType(baseEntityType);
 }
 
 /******************************************************************************
@@ -183,7 +217,14 @@ QList<Entity *> Context::entities() const
 
 Entity *Context::insertEntity(EntityType *type)
 {
-    qWarning() << "Context::addEntityType: IMPLEMENT ME";
+    Q_D(Context);
+    return d->insertEntity(type);
+}
+
+void Context::createBaseEntityType(const QString &name)
+{
+    Q_D(Context);
+    d->createBaseEntityType(name);
 }
 
 void Context::addEntityType(EntityType *type)
@@ -201,7 +242,9 @@ void Context::addAttribute(Attribute *attribute)
     if(d->properties.contains(attribute))
         return;
 
+    beginInsertColumns(QModelIndex(), d->properties.size(), d->properties.size());
     d->properties.append(attribute);
+    endInsertColumns();
 }
 
 void Context::addRelation(Relation *relation)
@@ -210,7 +253,9 @@ void Context::addRelation(Relation *relation)
     if(d->properties.contains(relation))
         return;
 
+    beginInsertColumns(QModelIndex(), d->properties.size(), d->properties.size());
     d->properties.append(relation);
+    endInsertColumns();
 }
 
 void Context::initializeEntityHierarchy()

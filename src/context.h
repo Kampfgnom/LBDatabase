@@ -19,6 +19,8 @@ class Context : public QAbstractTableModel
 {
     Q_OBJECT
 public:
+    static const QString NameColumn;
+
     ~Context();
 
     int id() const;
@@ -53,6 +55,7 @@ private:
 
     explicit Context(Row *row, Storage *parent);
 
+    void createBaseEntityType(const QString &name);
     void addEntityType(EntityType *type);
     void addAttribute(Attribute *attribute);
     void addRelation(Relation *relation);

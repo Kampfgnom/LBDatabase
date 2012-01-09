@@ -37,6 +37,7 @@ class StoragePrivate {
 
     void init();
     bool open();
+    Context *addContext(const QString &name, const QString &baseEntityTypeName);
 
     Table *attributesTable;
     Table *contextsTable;
@@ -118,9 +119,7 @@ bool StoragePrivate::open()
     }
 
     foreach(Row *row, attributesTable->rows()) {
-        Attribute *attribute = new Attribute(row, q);
-        attributes.insert(row->id(), attribute);
-        properties.append(attribute);
+        q->insertAttribute(new Attribute(row, q));
     }
 
     foreach(Row *row, relationsTable->rows()) {
@@ -140,13 +139,28 @@ bool StoragePrivate::open()
 
     foreach(Context *context, contexts.values()) {
         foreach(Entity *entity, context->entities()) {
-            foreach(PropertyValue *value, entity->propertieValues()) {
+            foreach(PropertyValue *value, entity->propertyValues()) {
                 value->fetchValue();
             }
         }
     }
 
     return true;
+}
+
+Context *StoragePrivate::addContext(const QString &name, const QString &baseEntityTypeName)
+{
+    Q_Q(Storage);
+    database->createTable(name);
+    Row *row = contextsTable->appendRow();
+    row->setData(Context::NameColumn, QVariant(name));
+
+    Context *context = new Context(row, q);
+    contexts.insert(row->id(), context);
+
+    context->createBaseEntityType(baseEntityTypeName);
+
+    return context;
 }
 
 /******************************************************************************
@@ -220,25 +234,45 @@ QList<Context *> Storage::contexts() const
 
 Context *Storage::addContext(const QString &name, const QString &baseEntityTypeName)
 {
-    qWarning() << "Storage::createContext: IMPLEMENT ME";
+    Q_D(Storage);
+    return d->addContext(name, baseEntityTypeName);
 }
 
 Attribute *Storage::attribute(int id) const
 {
     Q_D(const Storage);
-    return d->attributes.value(id);
+    return d->attributes.value(id, 0);
 }
 
 void Storage::insertEntityType(EntityType *type)
 {
     Q_D(Storage);
+    if(d->entityTypes.contains(type->id()))
+        return;
+
     d->entityTypes.insert(type->id(), type);
+}
+
+void Storage::insertAttribute(Attribute *attribute)
+{
+    Q_D(Storage);
+    if(d->attributes.contains(attribute->id()))
+        return;
+
+    d->attributes.insert(attribute->id(), attribute);
+    d->properties.append(attribute);
 }
 
 Table *Storage::entitiesTable() const
 {
     Q_D(const Storage);
     return d->entitiesTable;
+}
+
+Table *Storage::attributesTable() const
+{
+    Q_D(const Storage);
+    return d->attributesTable;
 }
 
 bool Storage::open()

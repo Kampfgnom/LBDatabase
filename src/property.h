@@ -6,6 +6,7 @@
 namespace LBDatabase {
 
 class Context;
+class Entity;
 
 class Property : public QObject
 {
@@ -18,8 +19,10 @@ public:
 
 private:
     friend class StoragePrivate;
+    friend class ContextPrivate;
 
     virtual void addPropertyValueToEntities() = 0;
+    virtual void addPropertyValue(Entity *entity) = 0;
 };
 
 } // namespace LBDatabase

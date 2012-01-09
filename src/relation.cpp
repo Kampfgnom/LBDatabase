@@ -38,6 +38,7 @@ class RelationPrivate {
     void init();
     void addPropertyValueToEntities();
     void initializeManyToManyRelation();
+    void addPropertyValue(Entity *entity);
 
     Row *row;
     Storage *storage;
@@ -104,6 +105,17 @@ void RelationPrivate::initializeManyToManyRelation()
         RelationValuePrivate *rightValue = qobject_cast<RelationValue *>(rightEntity->propertyValue(q))->d_func();
         leftValue->addOtherEntity(rightEntity);
         rightValue->addOtherEntity(leftEntity);
+    }
+}
+
+void RelationPrivate::addPropertyValue(Entity *entity)
+{
+    Q_Q(Relation);
+    if(entity->entityType() == entityTypeLeft) {
+        entity->addRelationValue(new RelationValueLeft(q, entity));
+    }
+    else if(entity->entityType() == entityTypeLeft) {
+        entity->addRelationValue(new RelationValueRight(q, entity));
     }
 }
 
@@ -184,6 +196,12 @@ void Relation::addPropertyValueToEntities()
 {
     Q_D(Relation);
     return d->addPropertyValueToEntities();
+}
+
+void Relation::addPropertyValue(Entity *entity)
+{
+    Q_D(Relation);
+    return d->addPropertyValue(entity);
 }
 
 void Relation::initializeManyToManyRelation()

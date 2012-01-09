@@ -17,9 +17,7 @@ namespace LBDatabase {
 /******************************************************************************
 ** EntityPrivate
 */
-namespace {
-const QString EntityTypeIdColumn("entityTypeId");
-}
+const QString Entity::EntityTypeIdColumn("entityTypeId");
 
 class EntityPrivate {
     EntityPrivate() {}
@@ -45,7 +43,7 @@ void EntityPrivate::init()
 {
     Q_Q(Entity);
     storage = context->storage();
-    entityType = storage->entityType(row->data(EntityTypeIdColumn).toInt());
+    entityType = storage->entityType(row->data(Entity::EntityTypeIdColumn).toInt());
     entityType->addEntity(q);
 }
 
@@ -102,7 +100,7 @@ Context *Entity::context() const
     return d->context;
 }
 
-QList<PropertyValue *> Entity::propertieValues() const
+QList<PropertyValue *> Entity::propertyValues() const
 {
     Q_D(const Entity);
     return d->propertyValues.values();

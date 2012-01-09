@@ -1,11 +1,16 @@
 #include "entitytype.h"
 
 #include "attribute.h"
+#include "column.h"
 #include "context.h"
+#include "database.h"
+#include "entity.h"
 #include "property.h"
+#include "propertyvalue.h"
 #include "relation.h"
 #include "row.h"
 #include "storage.h"
+#include "table.h"
 
 #include <QDebug>
 
@@ -21,8 +26,11 @@ const QString EntityType::ParentEntityTypeIdColumn("parentEntityTypeId");
 class EntityTypePrivate {
     EntityTypePrivate() : context(0), parentEntityType(0) {}
 
+    static QString typeToSql(EntityType::Type type);
+
     void init();
     void addInheritedProperties(EntityType *parent);
+    Attribute *addAttribute(const QString &name, EntityType::Type type);
 
     Row *row;
     QString name;
@@ -41,6 +49,21 @@ class EntityTypePrivate {
     EntityType * q_ptr;
     Q_DECLARE_PUBLIC(EntityType)
 };
+
+QString EntityTypePrivate::typeToSql(EntityType::Type type)
+{
+    switch(type) {
+    case EntityType::Text:
+        return Column::typeToName(Column::Text);
+    case EntityType::Integer:
+        return Column::typeToName(Column::Integer);
+    case EntityType::Real:
+        return Column::typeToName(Column::Real);
+    case EntityType::Unkown:
+    default:
+        return Column::typeToName(Column::Blob);
+    }
+}
 
 void EntityTypePrivate::init()
 {
@@ -76,6 +99,28 @@ void EntityTypePrivate::addInheritedProperties(EntityType *parent)
     foreach(EntityType *type, childEntityTypes) {
         type->d_func()->addInheritedProperties(q);
     }
+}
+
+Attribute *EntityTypePrivate::addAttribute(const QString &name, EntityType::Type type)
+{
+    Table *contextTable = storage->database()->table(context->name());
+    contextTable->addColumn(name, EntityTypePrivate::typeToSql(type));
+
+    Table *entitiesTable = storage->attributesTable();
+    Row *row = entitiesTable->appendRow();
+    row->setData(Attribute::NameColumn, QVariant(name));
+    row->setData(Attribute::DisplayNameColumn, QVariant(name));
+    row->setData(Attribute::EntityTypeIdColumn, QVariant(row->id()));
+    row->setData(Attribute::PrefetchStrategyColumn, QVariant(static_cast<int>(Attribute::PrefetchOnStartup)));
+
+    Attribute *attribute = new Attribute(row, storage);
+    storage->insertAttribute(attribute);
+    attribute->addPropertyValueToEntities();
+    foreach(Entity *entity, entities) {
+        entity->propertyValue(attribute)->fetchValue();
+    }
+
+    return attribute;
 }
 
 /******************************************************************************
@@ -183,9 +228,10 @@ QList<Relation *> EntityType::relations() const
     return d->relations;
 }
 
-Attribute *EntityType::addAttribute(const QString &name)
+Attribute *EntityType::addAttribute(const QString &name, Type type)
 {
-    qWarning() << "EntityType::addAttribute: IMPLEMENT ME";
+    Q_D(EntityType);
+    return d->addAttribute(name, type);
 }
 
 QList<Entity *> EntityType::entities() const

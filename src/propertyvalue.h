@@ -18,6 +18,8 @@ public:
 
 private:
     friend class StoragePrivate;
+    friend class ContextPrivate;
+    friend class EntityTypePrivate;
 
     virtual void fetchValue() = 0;
 };

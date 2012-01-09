@@ -47,8 +47,10 @@ private:
     Attribute *attribute(int id) const;
 
     void insertEntityType(EntityType *type);
+    void insertAttribute(Attribute *attribute);
 
     Table *entitiesTable() const;
+    Table *attributesTable() const;
 
     QScopedPointer<StoragePrivate> d_ptr;
     Q_DECLARE_PRIVATE(Storage)

@@ -47,7 +47,8 @@ private:
 
     explicit Relation(Row *row, Storage *parent);
 
-    virtual void addPropertyValueToEntities();
+    void addPropertyValueToEntities();
+    void addPropertyValue(Entity *entity);
 
     void initializeManyToManyRelation();
 

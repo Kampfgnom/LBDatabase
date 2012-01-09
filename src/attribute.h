@@ -14,8 +14,12 @@ class Attribute : public Property
 {
     Q_OBJECT
 public:
+    static const QString NameColumn;
+    static const QString DisplayNameColumn;
+    static const QString EntityTypeIdColumn;
+    static const QString PrefetchStrategyColumn;
+
     enum PrefetchStrategy {
-        NoPrefretch,
         PrefetchOnStartup
     };
 
@@ -31,14 +35,15 @@ public:
 
     QString name() const;
     PrefetchStrategy prefetchStrategy() const;
-    Visibility visibility() const;
 
 private:
     friend class StoragePrivate;
+    friend class EntityTypePrivate;
 
     explicit Attribute(Row *row, Storage *parent);
 
-    virtual void addPropertyValueToEntities();
+    void addPropertyValueToEntities();
+    void addPropertyValue(Entity *entity);
 
     QScopedPointer<AttributePrivate> d_ptr;
     Q_DECLARE_PRIVATE(Attribute)

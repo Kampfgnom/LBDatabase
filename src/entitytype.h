@@ -1,5 +1,5 @@
-#ifndef ENTITYTYPE_H
-#define ENTITYTYPE_H
+#ifndef LBDATABASEENTITYTYPE_H
+#define LBDATABASEENTITYTYPE_H
 
 #include <QObject>
 
@@ -22,6 +22,13 @@ public:
     static const QString NameColumn;
     static const QString ParentEntityTypeIdColumn;
 
+    enum Type {
+        Unkown,
+        Text,
+        Integer,
+        Real
+    };
+
     ~EntityType();
 
     int id() const;
@@ -36,7 +43,7 @@ public:
     QList<Attribute *> attributes() const;
     QList<Relation *> relations() const;
 
-    Attribute *addAttribute(const QString &name);
+    Attribute *addAttribute(const QString &name, Type type);
 
     QList<Entity *> entities() const;
 
@@ -68,4 +75,4 @@ private:
 
 } // namespace LBDatabase
 
-#endif // ENTITYTYPE_H
+#endif // LBDATABASEENTITYTYPE_H

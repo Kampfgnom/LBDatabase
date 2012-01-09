@@ -20,6 +20,8 @@ class Entity : public QObject
 {
     Q_OBJECT
 public:
+    static const QString EntityTypeIdColumn;
+
     ~Entity();
 
     virtual QString displayName(int role = Qt::DisplayRole) const;
@@ -28,7 +30,7 @@ public:
     EntityType *entityType() const;
     Storage *storage() const;
     Context *context() const;
-    QList<PropertyValue *> propertieValues() const;
+    QList<PropertyValue *> propertyValues() const;
     PropertyValue *propertyValue(Property *property) const;
 
     Row *row() const;
