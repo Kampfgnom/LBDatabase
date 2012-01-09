@@ -158,7 +158,10 @@ void EntityType::setName(const QString &name)
     Q_D(EntityType);
     if(d->name == name)
         return;
+
+    d->row->setData(EntityType::NameColumn, QVariant(name));
     d->name = name;
+    emit nameChanged(name);
 }
 
 LBDatabase::Context *EntityType::context() const

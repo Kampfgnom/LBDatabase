@@ -105,9 +105,21 @@ QString Attribute::name() const
 
 QString Attribute::displayName(const Context *context) const
 {
-    Q_UNUSED(context)
+    Q_UNUSED(context);
     Q_D(const Attribute);
     return d->displayName;
+}
+
+void Attribute::setDisplayName(const QString &displayName, const Context *context)
+{
+    Q_D(Attribute);
+    Q_UNUSED(context);
+    if(d->displayName == displayName)
+        return;
+
+    d->row->setData(Attribute::DisplayNameColumn, QVariant(displayName));
+    d->displayName = displayName;
+    emit displayNameChanged(displayName, d->entityType->context());
 }
 
 Attribute::PrefetchStrategy Attribute::prefetchStrategy() const

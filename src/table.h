@@ -50,10 +50,11 @@ public:
     bool setData(const QModelIndex &index, const QVariant &value, int role);
     Qt::ItemFlags flags(const QModelIndex &index) const;
 
+private Q_SLOTS:
+    void onRowDataChanged(int column, QVariant data);
+
 protected:
     friend class DatabasePrivate;
-
-    void emitHeaderDataChanged(Qt::Orientation orientation, int first, int last);
 
     Table(const QString &name, Database *database);
 

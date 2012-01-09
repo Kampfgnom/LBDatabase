@@ -68,6 +68,7 @@ void TablePrivate::init()
     while(query.next()) {
         id = query.value(idIndex).toInt();
         Row *row = new Row(query, q_ptr);
+        QObject::connect(row, SIGNAL(dataChanged(int,QVariant)), q, SLOT(onRowDataChanged(int,QVariant)));
         rows.append(row);
         rowsById.insert(id, row);
     }
@@ -208,6 +209,7 @@ Row *TablePrivate::appendRow()
     q->beginInsertRows(QModelIndex(),rows.size(), rows.size());
     rows.append(row);
     rowsById.insert(id, row);
+    QObject::connect(row, SIGNAL(dataChanged(int,QVariant)), q, SLOT(onRowDataChanged(int,QVariant)));
     q->endInsertRows();
     return row;
 }
@@ -558,6 +560,7 @@ bool Table::setData(const QModelIndex &index, const QVariant &value, int role)
         Q_D(const Table);
         Row *row = d->rows.at(index.row());
         row->setData(index.column(), value);
+        emit dataChanged(index, index);
         return true;
     }
     return false;
@@ -576,15 +579,13 @@ Qt::ItemFlags Table::flags(const QModelIndex &index) const
     return QAbstractItemModel::flags(index);
 }
 
-/*!
-  \internal
-
-  Emits the QAbstractTableModel::headerDataChanged() signal if a column's name
-  changes.
-  */
-void Table::emitHeaderDataChanged(Qt::Orientation orientation, int first, int last)
+void Table::onRowDataChanged(int column, QVariant data)
 {
-    emit headerDataChanged(orientation,first,last);
+    Q_D(const Table);
+    Q_UNUSED(data);
+    Row *row = static_cast<Row *>(sender());
+    QModelIndex i = index(d->rows.indexOf(row), column);
+    emit dataChanged(i, i);
 }
 
 } // namespace LBDatabase

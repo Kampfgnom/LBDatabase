@@ -31,7 +31,6 @@ class RelationPrivate {
     RelationPrivate() :
         entityTypeLeft(0), entityTypeRight(0),
         cardinality(Relation::OneToOne),
-        direction(Relation::LeftToRight),
         relationTable(0)
     {}
 
@@ -49,7 +48,6 @@ class RelationPrivate {
     EntityType *entityTypeLeft;
     EntityType *entityTypeRight;
     Relation::Cardinality cardinality;
-    Relation::Direction direction;
 
     Table *relationTable;
 
@@ -67,7 +65,6 @@ void RelationPrivate::init()
     entityTypeLeft = storage->entityType(row->data(EntityTypeLeftColumn).toInt());
     entityTypeRight = storage->entityType(row->data(EntityTypeRightColumn).toInt());
     cardinality = static_cast<Relation::Cardinality>(row->data(CardinalityColumn).toInt());
-    direction = static_cast<Relation::Direction>(row->data(DirectionColumn).toInt());
 
     relationTable = storage->database()->table(name);
 
@@ -155,11 +152,26 @@ QString Relation::displayName(const Context *context) const
     if(context) {
         if(d->entityTypeLeft && context == d->entityTypeLeft->context())
             return d->displayNameLeft;
-        if(d->entityTypeRight && context == d->entityTypeRight->context())
+        else if(d->entityTypeRight && context == d->entityTypeRight->context())
             return d->displayNameRight;
     }
 
-    return d->displayNameLeft;
+    return d->name;
+}
+
+void Relation::setDisplayName(const QString &displayName, const Context *context)
+{
+    Q_D(Relation);
+    if(context) {
+        if(d->entityTypeLeft && context == d->entityTypeLeft->context()) {
+            d->row->setData(DisplayNameLeftColumn, QVariant(displayName));
+            emit displayNameChanged(displayName, d->entityTypeLeft->context());
+        }
+        else if(d->entityTypeRight && context == d->entityTypeRight->context()) {
+            d->row->setData(DisplayNameRightColumn, QVariant(displayName));
+            emit displayNameChanged(displayName, d->entityTypeRight->context());
+        }
+    }
 }
 
 EntityType *Relation::entityTypeLeft() const
@@ -178,12 +190,6 @@ Relation::Cardinality Relation::cardinality() const
 {
     Q_D(const Relation);
     return d->cardinality;
-}
-
-Relation::Direction Relation::direction() const
-{
-    Q_D(const Relation);
-    return d->direction;
 }
 
 Table *Relation::relationTable() const

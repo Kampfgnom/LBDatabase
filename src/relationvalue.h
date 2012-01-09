@@ -15,14 +15,16 @@ class RelationValue : public PropertyValue
 public:
     ~RelationValue();
 
+    virtual Entity *entity() const;
     Property *property() const;
 
     QList<Entity *> entities() const;
 
+    bool isEditable() const;
+
 protected:
     friend class RelationPrivate;
 
-    explicit RelationValue(Relation *relation, Entity *parent);
     explicit RelationValue(RelationValuePrivate &dd, Relation *relation, Entity *parent);
 
     void fetchValue();

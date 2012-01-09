@@ -15,8 +15,12 @@ class AttributeValue : public PropertyValue
 public:
     ~AttributeValue();
 
+    virtual Entity *entity() const;
     Property *property() const;
     QVariant data(int role = Qt::DisplayRole) const;
+    bool setData(const QVariant &data);
+
+    bool isEditable() const;
 
 private:
     friend class AttributePrivate;

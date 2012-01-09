@@ -25,10 +25,10 @@ public:
 
     int id() const;
     QString name() const;
+    void setName(const QString &name);
     Storage *storage() const;
 
     EntityType *baseEntityType() const;
-    EntityType *entityType(const QString &name) const;
     QList<EntityType *> entityTypes() const;
 
     EntityType *addEntityType(const QString &name, EntityType *parentIntityType);
@@ -44,8 +44,16 @@ public:
     QVariant headerData(int section, Qt::Orientation orientation, int role) const;
     int columnCount(const QModelIndex &parent) const;
     int rowCount(const QModelIndex &parent) const;
-//    bool setData(const QModelIndex &index, const QVariant &value, int role);
-//    Qt::ItemFlags flags(const QModelIndex &index) const;
+    bool setData(const QModelIndex &index, const QVariant &value, int role);
+    Qt::ItemFlags flags(const QModelIndex &index) const;
+
+Q_SIGNALS:
+    void nameChanged(QString name);
+
+private Q_SLOTS:
+    void onEntityTypeNameChanged(QString name);
+    void onPropertyDisplayNameChanged(QString displayName, Context* context);
+    void onPropertyValueDataChanged(QVariant data);
 
 private:
     friend class StoragePrivate;

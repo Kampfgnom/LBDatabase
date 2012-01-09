@@ -1,6 +1,7 @@
 #include "attributevalue.h"
 
 #include "attribute.h"
+#include "context.h"
 #include "entity.h"
 #include "row.h"
 
@@ -28,6 +29,8 @@ class AttributeValuePrivate {
 
 void AttributeValuePrivate::init()
 {
+    Q_Q(AttributeValue);
+    QObject::connect(q, SIGNAL(dataChanged(QVariant)), entity->context(), SLOT(onPropertyValueDataChanged(QVariant)));
 }
 
 void AttributeValuePrivate::fetchValue()
@@ -53,11 +56,34 @@ AttributeValue::~AttributeValue()
 {
 }
 
+Entity *AttributeValue::entity() const
+{
+    Q_D(const AttributeValue);
+    return d->entity;
+}
+
 QVariant AttributeValue::data(int role) const
 {
-    Q_UNUSED(role)
+    Q_UNUSED(role);
     Q_D(const AttributeValue);
     return d->data;
+}
+
+bool AttributeValue::setData(const QVariant &data)
+{
+    Q_D(AttributeValue);
+    if(!isEditable())
+        return false;
+
+    d->entity->row()->setData(d->attribute->name(), data);
+    d->data = data;
+    emit dataChanged(data);
+    return true;
+}
+
+bool AttributeValue::isEditable() const
+{
+    return true;
 }
 
 Property *AttributeValue::property() const

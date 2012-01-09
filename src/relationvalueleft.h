@@ -23,6 +23,7 @@ private:
     friend class RelationValueRightPrivate;
 
     explicit RelationValueLeft(Relation *relation, Entity *parent);
+    virtual bool setData(const QVariant &data);
 
     void fetchValue();
     void setRightValue(RelationValueRight *right);

@@ -1,5 +1,5 @@
-#ifndef LBDATABASEENTITYTYPE_H
-#define LBDATABASEENTITYTYPE_H
+#ifndef LBDATABASE_ENTITYTYPE_H
+#define LBDATABASE_ENTITYTYPE_H
 
 #include <QObject>
 
@@ -33,6 +33,7 @@ public:
 
     int id() const;
     QString name() const;
+    void setName(const QString &name);
     Context *context() const;
     EntityType *parentEntityType() const;
     int parentEntityTypeId() const;
@@ -49,6 +50,9 @@ public:
 
     bool inherits(EntityType *entityType) const;
 
+Q_SIGNALS:
+    void nameChanged(QString name);
+
 private:
     friend class ContextPrivate;
     friend class StoragePrivate;
@@ -58,7 +62,6 @@ private:
 
     explicit EntityType(LBDatabase::Row *row, Storage *parent);
 
-    void setName(const QString &name);
     void setContext(Context *context);
     void addChildEntityType(EntityType *type);
     void setParentEntityType(EntityType *type);
@@ -75,4 +78,4 @@ private:
 
 } // namespace LBDatabase
 
-#endif // LBDATABASEENTITYTYPE_H
+#endif // LBDATABASE_ENTITYTYPE_H

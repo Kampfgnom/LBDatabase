@@ -15,17 +15,12 @@ namespace LBDatabase {
 class RelationValueLeftPrivate : public RelationValuePrivate {
     RelationValueLeftPrivate() {}
 
-    void init();
     void fetchValue();
 
     RelationValueRight *rightValue;
 
     Q_DECLARE_PUBLIC(RelationValueLeft)
 };
-
-void RelationValueLeftPrivate::init()
-{
-}
 
 void RelationValueLeftPrivate::fetchValue()
 {
@@ -39,13 +34,19 @@ RelationValueLeft::RelationValueLeft(Relation *relation, Entity *parent) :
 {
 }
 
+bool RelationValueLeft::setData(const QVariant &data)
+{
+    Q_UNUSED(data);
+    return false;
+}
+
 RelationValueLeft::~RelationValueLeft()
 {
 }
 
 QVariant RelationValueLeft::data(int role) const
 {
-    Q_UNUSED(role)
+    Q_UNUSED(role);
     Q_D(const RelationValueLeft);
 
     if(d->otherEntities.isEmpty())

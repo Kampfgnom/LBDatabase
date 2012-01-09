@@ -38,7 +38,7 @@ class ContextPrivate {
     Row *row;
     Storage *storage;
     QString name;
-    QHash<QString, EntityType *> entityTypes;
+    QList<EntityType *> entityTypes;
     EntityType *baseEntityType;
     Table *contextTable;
     QList<Entity *> entities;
@@ -167,6 +167,17 @@ QString Context::name() const
     return d->name;
 }
 
+void Context::setName(const QString &name)
+{
+    Q_D(Context);
+    if(d->name == name)
+        return;
+
+    d->row->setData(Context::NameColumn, QVariant(name));
+    d->name = name;
+    emit nameChanged(name);
+}
+
 Storage *Context::storage() const
 {
     Q_D(const Context);
@@ -179,16 +190,10 @@ EntityType *Context::baseEntityType() const
     return d->baseEntityType;
 }
 
-EntityType *Context::entityType(const QString &name) const
-{
-    Q_D(const Context);
-    return d->entityTypes.value(name);
-}
-
 QList<EntityType *> Context::entityTypes() const
 {
     Q_D(const Context);
-    return d->entityTypes.values();
+    return d->entityTypes;
 }
 
 EntityType *Context::addEntityType(const QString &name, EntityType *parentIntityType)
@@ -230,10 +235,11 @@ void Context::createBaseEntityType(const QString &name)
 void Context::addEntityType(EntityType *type)
 {
     Q_D(Context);
-    if(d->entityTypes.contains(type->name()))
+    if(d->entityTypes.contains(type))
         return;
 
-    d->entityTypes.insert(type->name(), type);
+    connect(type, SIGNAL(nameChanged(QString)), this, SLOT(onEntityTypeNameChanged(QString)));
+    d->entityTypes.append(type);
 }
 
 void Context::addAttribute(Attribute *attribute)
@@ -244,6 +250,7 @@ void Context::addAttribute(Attribute *attribute)
 
     beginInsertColumns(QModelIndex(), d->properties.size(), d->properties.size());
     d->properties.append(attribute);
+    connect(attribute, SIGNAL(displayNameChanged(QString,Context*)), this, SLOT(onPropertyDisplayNameChanged(QString,Context*)));
     endInsertColumns();
 }
 
@@ -255,6 +262,7 @@ void Context::addRelation(Relation *relation)
 
     beginInsertColumns(QModelIndex(), d->properties.size(), d->properties.size());
     d->properties.append(relation);
+    connect(relation, SIGNAL(displayNameChanged(QString,Context*)), this, SLOT(onPropertyDisplayNameChanged(QString,Context*)));
     endInsertColumns();
 }
 
@@ -339,31 +347,66 @@ int Context::rowCount(const QModelIndex &parent) const
     return d->entities.size();
 }
 
-///*!
-//  Implements QAbstractTableModel::setData()
-//  */
-//bool Context::setData(const QModelIndex &index, const QVariant &value, int role)
-//{
-//    if(role == Qt::EditRole) {
-//        Q_D(const Table);
-//        Row *row = d->rows.at(index.row());
-//        row->setData(index.column(), value);
-//        return true;
-//    }
-//    return false;
-//}
+void Context::onEntityTypeNameChanged(QString name)
+{
+    Q_D(const Context);
+    Q_UNUSED(name);
+    EntityType *type = static_cast<EntityType *>(sender());
+    QModelIndex i = index(d->entityTypes.indexOf(type), 1);
+    emit dataChanged(i, i);
+}
 
-///*!
-//  Implements QAbstractTableModel::flags()
-//  */
-//Qt::ItemFlags Context::flags(const QModelIndex &index) const
-//{
-//    Q_D(const Table);
-//    if(d->columns.at(index.column())->name() != QLatin1String("id")) {
-//        return QAbstractItemModel::flags(index) | Qt::ItemIsEditable;
-//    }
+void Context::onPropertyDisplayNameChanged(QString displayName, Context *context)
+{
+    Q_D(const Context);
+    Q_UNUSED(displayName);
+    if(context == this) {
+        Property *p = static_cast<Property *>(sender());
+        int i =d->properties.indexOf(p);
+        emit headerDataChanged(Qt::Horizontal, i, i);
+    }
+}
 
-//    return QAbstractItemModel::flags(index);
-//}
+void Context::onPropertyValueDataChanged(QVariant data)
+{
+    Q_D(const Context);
+    Q_UNUSED(data);
+
+    PropertyValue *v = static_cast<PropertyValue *>(sender());
+    QModelIndex i = index(d->entities.indexOf(v->entity()), d->properties.indexOf(v->property()));
+    emit dataChanged(i, i);
+}
+
+/*!
+  Implements QAbstractTableModel::setData()
+  */
+bool Context::setData(const QModelIndex &index, const QVariant &value, int role)
+{
+    if(role == Qt::EditRole) {
+        Q_D(const Context);
+        Entity *e = d->entities.at(index.row());
+        PropertyValue *v = e->propertyValue(d->properties.value(index.column() - 2));
+        if(v)
+            return v->setData(value);
+    }
+    return false;
+}
+
+/*!
+  Implements QAbstractTableModel::flags()
+  */
+Qt::ItemFlags Context::flags(const QModelIndex &index) const
+{
+    Q_D(const Context);
+    if(index.column() > 1) {
+        Entity *e = d->entities.at(index.row());
+        PropertyValue *v = e->propertyValue(d->properties.value(index.column() - 2));
+        if(v && v->isEditable()) {
+            return QAbstractItemModel::flags(index) | Qt::ItemIsEditable;
+        }
+    }
+
+    return QAbstractItemModel::flags(index);
+}
 
 } // namespace LBDatabase

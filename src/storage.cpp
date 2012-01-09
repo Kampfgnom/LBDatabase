@@ -198,6 +198,17 @@ QString Storage::name() const
     return d->name;
 }
 
+void Storage::setName(const QString &name)
+{
+    Q_D(Storage);
+    if(d->name == name)
+        return;
+
+    d->metaDataTable->rowAt(0)->setData(NameColumn, QVariant(name));
+    d->name = name;
+    emit nameChanged(name);
+}
+
 Storage::Storage(const QString &fileName, QObject *parent) :
     QObject(parent),
     d_ptr(new StoragePrivate)
@@ -261,6 +272,12 @@ void Storage::insertAttribute(Attribute *attribute)
 
     d->attributes.insert(attribute->id(), attribute);
     d->properties.append(attribute);
+}
+
+Table *Storage::contextsTable() const
+{
+    Q_D(const Storage);
+    return d->contextsTable;
 }
 
 Table *Storage::entitiesTable() const

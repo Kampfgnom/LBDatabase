@@ -67,7 +67,7 @@ Entity::~Entity()
 
 QString Entity::displayName(int role) const
 {
-    Q_UNUSED(role)
+    Q_UNUSED(role);
     Q_D(const Entity);
     return d->entityType->name()+QLatin1String(" ID: ")+QString::number(d->row->id());
 }
@@ -80,6 +80,17 @@ QVariant Entity::data(Property *property) const
         return QVariant();
 
     return propertyValue->data();
+}
+
+bool Entity::setData(const QVariant &data, Property *property)
+{
+    Q_D(const Entity);
+
+    PropertyValue *propertyValue = d->propertyValues.value(property, 0);
+    if(!propertyValue)
+        return false;
+
+    return propertyValue->setData(data);
 }
 
 EntityType *Entity::entityType() const

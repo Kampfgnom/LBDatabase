@@ -16,6 +16,7 @@ public:
     ~RelationValueRight();
 
     QVariant data(int role = Qt::DisplayRole) const;
+    bool setData(const QVariant &data);
 
 private:
     friend class RelationPrivate;

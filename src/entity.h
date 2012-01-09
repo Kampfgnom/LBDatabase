@@ -25,7 +25,6 @@ public:
     ~Entity();
 
     virtual QString displayName(int role = Qt::DisplayRole) const;
-    QVariant data(Property *property) const;
 
     EntityType *entityType() const;
     Storage *storage() const;
@@ -39,8 +38,12 @@ private:
     friend class AttributePrivate;
     friend class ContextPrivate;
     friend class RelationPrivate;
+    friend class Context;
 
     explicit Entity(Row *row, Context *parent);
+
+    QVariant data(Property *property) const;
+    bool setData(const QVariant &data, Property *property);
 
     void addAttributeValue(AttributeValue *value);
     void addRelationValue(RelationValue *value);

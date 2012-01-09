@@ -32,6 +32,7 @@ public:
 
     int id() const;
     QString displayName(const Context *context = 0) const;
+    virtual void setDisplayName(const QString &displayName, const Context *context = 0);
 
     QString name() const;
     PrefetchStrategy prefetchStrategy() const;

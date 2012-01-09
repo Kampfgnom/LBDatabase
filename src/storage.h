@@ -27,11 +27,15 @@ public:
 
     Database *database() const;
     QString name() const;
+    void setName(const QString &name);
     QString fileName() const;
 
     QList<Context *> contexts() const;
 
     Context *addContext(const QString &name, const QString &baseEntityTypeName);
+
+Q_SIGNALS:
+    void nameChanged(QString name);
 
 private:
     friend class EntityTypePrivate;
@@ -49,6 +53,7 @@ private:
     void insertEntityType(EntityType *type);
     void insertAttribute(Attribute *attribute);
 
+    Table *contextsTable() const;
     Table *entitiesTable() const;
     Table *attributesTable() const;
 

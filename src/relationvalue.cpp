@@ -1,6 +1,7 @@
 #include "relationvalue.h"
 #include "relationvalue_p.h"
 
+#include "context.h"
 #include "entity.h"
 #include "entitytype.h"
 #include "relation.h"
@@ -13,10 +14,8 @@ namespace LBDatabase {
 */
 void RelationValuePrivate::init()
 {
-}
-
-void RelationValuePrivate::fetchValue()
-{
+    Q_Q(RelationValue);
+    QObject::connect(q, SIGNAL(dataChanged(QVariant)), entity->context(), SLOT(onPropertyValueDataChanged(QVariant)));
 }
 
 void RelationValuePrivate::addOtherEntity(Entity *entity)
@@ -28,17 +27,6 @@ void RelationValuePrivate::addOtherEntity(Entity *entity)
 /******************************************************************************
 ** RelationValue
 */
-RelationValue::RelationValue(Relation *relation, Entity *parent) :
-    PropertyValue(parent),
-    d_ptr(new RelationValuePrivate)
-{
-    Q_D(RelationValue);
-    d->q_ptr = this;
-    d->relation = relation;
-    d->entity = parent;
-    d->init();
-}
-
 RelationValue::RelationValue(RelationValuePrivate &dd, Relation *relation, Entity *parent) :
     PropertyValue(parent),
     d_ptr(&dd)
@@ -54,10 +42,21 @@ RelationValue::~RelationValue()
 {
 }
 
+Entity *RelationValue::entity() const
+{
+    Q_D(const RelationValue);
+    return d->entity;
+}
+
 QList<Entity *> RelationValue::entities() const
 {
     Q_D(const RelationValue);
     return d->otherEntities;
+}
+
+bool RelationValue::isEditable() const
+{
+    return false;
 }
 
 Property *RelationValue::property() const

@@ -16,12 +16,6 @@ class Relation : public Property
 {
     Q_OBJECT
 public:
-    enum Direction {
-        LeftToRight,
-        RightToLeft,
-        Both
-    };
-
     enum Cardinality {
         OneToOne,
         OneToMany,
@@ -32,14 +26,15 @@ public:
 
     int id() const;
     QString displayName(const Context *context = 0) const;
+    void setDisplayName(const QString &displayName, const Context *context);
 
     QString name() const;
     EntityType *entityTypeLeft() const;
     EntityType *entityTypeRight() const;
     Cardinality cardinality() const;
-    Direction direction() const;
 
     Table *relationTable() const;
+    bool isEditable();
 
 private:
     friend class StoragePrivate;
