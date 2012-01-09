@@ -41,6 +41,20 @@ void AttributeValuePrivate::fetchValue()
 /******************************************************************************
 ** AttributeValue
 */
+/*!
+  \class AttributeValue
+  \brief The AttributeValue class represents a value of an Attribute of a
+  concrete Entity instance.
+
+  \ingroup highlevel-database-classes
+
+  \todo Document when done.
+  */
+
+/*!
+  Creates an AttributeValue instance, which represents a conrete property with
+  the Attribute description \a attribute of the Entity \a parent.
+  */
 AttributeValue::AttributeValue(Attribute *attribute, Entity *parent) :
     PropertyValue(parent),
     d_ptr(new AttributeValuePrivate)
@@ -52,16 +66,27 @@ AttributeValue::AttributeValue(Attribute *attribute, Entity *parent) :
     d->init();
 }
 
+/*!
+  Destroys the attribute value.
+  */
 AttributeValue::~AttributeValue()
 {
 }
 
+/*!
+  Returns the Entity to which this attribute value belongs.
+  */
 Entity *AttributeValue::entity() const
 {
     Q_D(const AttributeValue);
     return d->entity;
 }
 
+/*!
+  Returns the value of the attribute.
+
+  The \a role parameter is currently being ignored.
+  */
 QVariant AttributeValue::data(int role) const
 {
     Q_UNUSED(role);
@@ -69,6 +94,11 @@ QVariant AttributeValue::data(int role) const
     return d->data;
 }
 
+/*!
+  Sets the value of the attribute to \a data.
+
+  Does nothing if the attribute is not editable.
+  */
 bool AttributeValue::setData(const QVariant &data)
 {
     Q_D(AttributeValue);
@@ -81,17 +111,26 @@ bool AttributeValue::setData(const QVariant &data)
     return true;
 }
 
+/*!
+  Returns true.
+  */
 bool AttributeValue::isEditable() const
 {
     return true;
 }
 
+/*!
+  Returns the Property instance, which describes this attribute value.
+  */
 Property *AttributeValue::property() const
 {
     Q_D(const AttributeValue);
     return d->attribute;
 }
 
+/*!
+  Reads the value of the attribute from the database.
+  */
 void AttributeValue::fetchValue()
 {
     Q_D(AttributeValue);

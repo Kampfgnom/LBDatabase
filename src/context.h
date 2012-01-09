@@ -25,18 +25,15 @@ public:
 
     int id() const;
     QString name() const;
-    void setName(const QString &name);
+//    void setName(const QString &name);
     Storage *storage() const;
 
     EntityType *baseEntityType() const;
     QList<EntityType *> entityTypes() const;
-
-    EntityType *addEntityType(const QString &name, EntityType *parentIntityType);
+    EntityType *addEntityType(const QString &name, EntityType *parentEntityType);
 
     Entity *entity(int id) const;
-    Entity *entityAt(int index) const;
     QList<Entity *> entities() const;
-
     Entity *insertEntity(EntityType *type);
 
     // QAbstractTableModel

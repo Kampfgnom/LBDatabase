@@ -140,6 +140,31 @@ void ContextPrivate::createBaseEntityType(const QString &name)
 /******************************************************************************
 ** Context
 */
+/*!
+  \class Context
+  \brief The Context class represents a context in a Storage.
+
+  \ingroup highlevel-database-classes
+
+  Each context is responsible for a hierarchy of EntityType and the concrete
+  Entity instances of these types. It always has exactly one baseEntityType()
+  from which other types in the context may be derived. The entityTypes() list
+  contains every type in the context. You can add a new type with
+  addEntityType().
+
+  You may access the Entity instances of each context either by id (entity()),
+  by index (entityAt()) or through the list of all entities(). You can insert
+  new entities into the context by calling insertEntity().
+
+  The Context class inherits QAbstractTableModel, so that you can add it as a
+  model for any model-view based Qt class like QTreeView. This model is
+  editable.
+
+  */
+
+/*!
+  Creates a new context in the Storage \a parent, which is described by /a row.
+  */
 Context::Context(Row *row, Storage *parent) :
     QAbstractTableModel(parent),
     d_ptr(new ContextPrivate)
@@ -151,87 +176,127 @@ Context::Context(Row *row, Storage *parent) :
     d->init();
 }
 
+/*!
+  Destroys the context.
+  */
 Context::~Context()
 {
 }
 
+/*!
+  Returns the storage-global ID of the context.
+  */
 int Context::id() const
 {
     Q_D(const Context);
     return d->row->id();
 }
 
+/*!
+  Returns the name of the context. This name is also the name of the Sqlite
+  table, which contains the Entity instances of the context.
+  */
 QString Context::name() const
 {
     Q_D(const Context);
     return d->name;
 }
 
-void Context::setName(const QString &name)
-{
-    Q_D(Context);
-    if(d->name == name)
-        return;
+//void Context::setName(const QString &name)
+//{
+//    Q_D(Context);
+//    if(d->name == name)
+//        return;
 
-    d->row->setData(Context::NameColumn, QVariant(name));
-    d->name = name;
-    emit nameChanged(name);
-}
+//    d->storage->database()->
+//    d->row->setData(Context::NameColumn, QVariant(name));
+//    d->name = name;
+//    emit nameChanged(name);
+//}
 
+/*!
+  Returns the storage, which contains the context.
+  */
 Storage *Context::storage() const
 {
     Q_D(const Context);
     return d->storage;
 }
 
+/*!
+  Returns the EntityType, from which all types in the context are somehow
+  derived.
+  */
 EntityType *Context::baseEntityType() const
 {
     Q_D(const Context);
     return d->baseEntityType;
 }
 
+/*!
+  Returns a list of all types, for which the context is responsible.
+  */
 QList<EntityType *> Context::entityTypes() const
 {
     Q_D(const Context);
     return d->entityTypes;
 }
 
-EntityType *Context::addEntityType(const QString &name, EntityType *parentIntityType)
+/*!
+  Adds a new EntityType to the context, which will inherit all properties from
+  \a parentEntityType.
+  */
+EntityType *Context::addEntityType(const QString &name, EntityType *parentEntityType)
 {
     Q_D(Context);
-    return d->addEntityType(name, parentIntityType);
+    return d->addEntityType(name, parentEntityType);
 }
 
+/*!
+  Returns the Entity instance with the ID \a id.
+  */
 Entity *Context::entity(int id) const
 {
     Q_D(const Context);
     return d->entitiesById.value(id);
 }
 
-Entity *Context::entityAt(int index) const
-{
-    Q_D(const Context);
-    return d->entities.at(index);
-}
-
+/*!
+  Returns a list of all Entity instances.
+  */
 QList<Entity *> Context::entities() const
 {
     Q_D(const Context);
     return d->entities;
 }
 
+/*!
+  Inserts a new Entity of the type \a type into the context and returns the
+  instance.
+  */
 Entity *Context::insertEntity(EntityType *type)
 {
     Q_D(Context);
     return d->insertEntity(type);
 }
 
+/*!
+  \internal
+
+  Creates the base entity type for the context. This is only being used, when
+  creating a new context.
+  */
 void Context::createBaseEntityType(const QString &name)
 {
     Q_D(Context);
     d->createBaseEntityType(name);
 }
 
+/*!
+  \internal
+
+  Adds the EntityType \a type to the context. This is when loading the storage.
+  */
 void Context::addEntityType(EntityType *type)
 {
     Q_D(Context);
@@ -242,6 +307,11 @@ void Context::addEntityType(EntityType *type)
     d->entityTypes.append(type);
 }
 
+/*!
+  \internal
+
+  Adds the Attribute \a attribute to the context. This is when loading the storage.
+  */
 void Context::addAttribute(Attribute *attribute)
 {
     Q_D(Context);
@@ -254,6 +324,11 @@ void Context::addAttribute(Attribute *attribute)
     endInsertColumns();
 }
 
+/*!
+  \internal
+
+  Adds the Relation \a relation to the context. This is when loading the storage.
+  */
 void Context::addRelation(Relation *relation)
 {
     Q_D(Context);
@@ -266,12 +341,22 @@ void Context::addRelation(Relation *relation)
     endInsertColumns();
 }
 
+/*!
+  \internal
+
+  Initialized the hierarchy of the EntityTypes. This is when loading the storage.
+  */
 void Context::initializeEntityHierarchy()
 {
     Q_D(Context);
     d->initializeEntityHierarchy();
 }
 
+/*!
+  \internal
+
+  Loads the Entity instances in this context. This is when loading the storage.
+  */
 void Context::loadEntities()
 {
     Q_D(Context);
@@ -347,6 +432,10 @@ int Context::rowCount(const QModelIndex &parent) const
     return d->entities.size();
 }
 
+/*!
+  \internal
+  Listens to name changes of EntityTypes and updates the model accordingly.
+  */
 void Context::onEntityTypeNameChanged(QString name)
 {
     Q_D(const Context);
@@ -356,6 +445,10 @@ void Context::onEntityTypeNameChanged(QString name)
     emit dataChanged(i, i);
 }
 
+/*!
+  \internal
+  Listens to name changes of Properties and updates the model accordingly.
+  */
 void Context::onPropertyDisplayNameChanged(QString displayName, Context *context)
 {
     Q_D(const Context);
@@ -367,6 +460,10 @@ void Context::onPropertyDisplayNameChanged(QString displayName, Context *context
     }
 }
 
+/*!
+  \internal
+  Listens to changes of PropertyValues and updates the model accordingly.
+  */
 void Context::onPropertyValueDataChanged(QVariant data)
 {
     Q_D(const Context);

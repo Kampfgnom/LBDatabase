@@ -23,11 +23,6 @@ public:
         PrefetchOnStartup
     };
 
-    enum Visibility {
-        Visible,
-        Hidden
-    };
-
     ~Attribute();
 
     int id() const;
