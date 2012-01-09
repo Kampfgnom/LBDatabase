@@ -123,9 +123,7 @@ bool StoragePrivate::open()
     }
 
     foreach(Row *row, relationsTable->rows()) {
-        Relation *relation = new Relation(row, q);
-        relations.insert(row->id(), relation);
-        properties.append(relation);
+        q->insertRelation(new Relation(row, q));
     }
 
     foreach(Context *context, contexts.values()) {
@@ -272,6 +270,16 @@ void Storage::insertAttribute(Attribute *attribute)
 
     d->attributes.insert(attribute->id(), attribute);
     d->properties.append(attribute);
+}
+
+void Storage::insertRelation(Relation *relation)
+{
+    Q_D(Storage);
+    if(d->relations.contains(relation->id()))
+        return;
+
+    d->relations.insert(relation->id(), relation);
+    d->properties.append(relation);
 }
 
 Table *Storage::contextsTable() const

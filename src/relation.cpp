@@ -17,15 +17,12 @@ namespace LBDatabase {
 /******************************************************************************
 ** RelationPrivate
 */
-namespace {
-const QString NameColumn("name");
-const QString DisplayNameLeftColumn("displaynameleft");
-const QString DisplayNameRightColumn("displaynameright");
-const QString EntityTypeLeftColumn("entitytypeleft");
-const QString EntityTypeRightColumn("entitytyperight");
-const QString CardinalityColumn("cardinality");
-const QString DirectionColumn("direction");
-}
+const QString Relation::NameColumn("name");
+const QString Relation::DisplayNameLeftColumn("displaynameleft");
+const QString Relation::DisplayNameRightColumn("displaynameright");
+const QString Relation::EntityTypeLeftColumn("entitytypeleft");
+const QString Relation::EntityTypeRightColumn("entitytyperight");
+const QString Relation::CardinalityColumn("cardinality");
 
 class RelationPrivate {
     RelationPrivate() :
@@ -59,12 +56,12 @@ void RelationPrivate::init()
 {
     Q_Q(Relation);
 
-    name = row->data(NameColumn).toString();
-    displayNameLeft = row->data(DisplayNameLeftColumn).toString();
-    displayNameRight = row->data(DisplayNameRightColumn).toString();
-    entityTypeLeft = storage->entityType(row->data(EntityTypeLeftColumn).toInt());
-    entityTypeRight = storage->entityType(row->data(EntityTypeRightColumn).toInt());
-    cardinality = static_cast<Relation::Cardinality>(row->data(CardinalityColumn).toInt());
+    name = row->data(Relation::NameColumn).toString();
+    displayNameLeft = row->data(Relation::DisplayNameLeftColumn).toString();
+    displayNameRight = row->data(Relation::DisplayNameRightColumn).toString();
+    entityTypeLeft = storage->entityType(row->data(Relation::EntityTypeLeftColumn).toInt());
+    entityTypeRight = storage->entityType(row->data(Relation::EntityTypeRightColumn).toInt());
+    cardinality = static_cast<Relation::Cardinality>(row->data(Relation::CardinalityColumn).toInt());
 
     relationTable = storage->database()->table(name);
 

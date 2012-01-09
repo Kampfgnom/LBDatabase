@@ -11,6 +11,7 @@ class Attribute;
 class Context;
 class Database;
 class EntityType;
+class Relation;
 class Table;
 
 class StoragePrivate;
@@ -52,6 +53,7 @@ private:
 
     void insertEntityType(EntityType *type);
     void insertAttribute(Attribute *attribute);
+    void insertRelation(Relation *relation);
 
     Table *contextsTable() const;
     Table *entitiesTable() const;

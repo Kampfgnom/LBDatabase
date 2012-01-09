@@ -31,6 +31,7 @@ class EntityTypePrivate {
     void init();
     void addInheritedProperties(EntityType *parent);
     Attribute *addAttribute(const QString &name, EntityType::Type type);
+    Relation *addRelation(const QString &name, EntityType *otherType, Relation::Cardinality cardinality);
 
     Row *row;
     QString name;
@@ -121,6 +122,36 @@ Attribute *EntityTypePrivate::addAttribute(const QString &name, EntityType::Type
     }
 
     return attribute;
+}
+
+Relation *EntityTypePrivate::addRelation(const QString &name, EntityType *otherType, Relation::Cardinality cardinality)
+{
+    Q_Q(EntityType);
+    Row *row = storage->contextsTable()->appendRow();
+    row->setData(Relation::NameColumn, QVariant(name));
+    row->setData(Relation::EntityTypeLeftColumn, QVariant(q->id()));
+    row->setData(Relation::EntityTypeRightColumn, QVariant(otherType->id()));
+    row->setData(Relation::DisplayNameLeftColumn, QVariant(name));
+    row->setData(Relation::DisplayNameRightColumn, QVariant(name));
+    row->setData(Relation::CardinalityColumn, QVariant(static_cast<int>(cardinality)));
+
+    if(cardinality == Relation::OneToMany || cardinality == Relation::OneToOne) {
+        storage->database()->table(otherType->name())->addColumn(name, Column::typeToName(Column::Integer));
+    }
+    else if(cardinality == Relation::ManyToMany) {
+        Table *table = storage->database()->createTable(name);
+        table->addColumn(q->name(), Column::typeToName(Column::Integer));
+        table->addColumn(otherType->name(), Column::typeToName(Column::Integer));
+    }
+
+    Relation *relation = new Relation(row, storage);
+    storage->insertRelation(relation);
+    relation->addPropertyValueToEntities();
+    foreach(Entity *entity, entities) {
+        entity->propertyValue(relation)->fetchValue();
+    }
+
+    return relation;
 }
 
 /******************************************************************************
@@ -235,6 +266,12 @@ Attribute *EntityType::addAttribute(const QString &name, Type type)
 {
     Q_D(EntityType);
     return d->addAttribute(name, type);
+}
+
+Relation *EntityType::addRelation(const QString &name, EntityType *otherType, Relation::Cardinality cardinality)
+{
+    Q_D(EntityType);
+    return d->addRelation(name, otherType, cardinality);
 }
 
 QList<Entity *> EntityType::entities() const

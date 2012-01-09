@@ -3,13 +3,14 @@
 
 #include <QObject>
 
+#include "relation.h"
+
 namespace LBDatabase {
 
 class Attribute;
 class Context;
 class Entity;
 class Property;
-class Relation;
 class Row;
 class Storage;
 
@@ -45,6 +46,7 @@ public:
     QList<Relation *> relations() const;
 
     Attribute *addAttribute(const QString &name, Type type);
+    Relation *addRelation(const QString &name, EntityType *otherType, Relation::Cardinality cardinality);
 
     QList<Entity *> entities() const;
 

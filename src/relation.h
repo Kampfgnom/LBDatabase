@@ -16,6 +16,13 @@ class Relation : public Property
 {
     Q_OBJECT
 public:
+    static const QString NameColumn;
+    static const QString DisplayNameLeftColumn;
+    static const QString DisplayNameRightColumn;
+    static const QString EntityTypeLeftColumn;
+    static const QString EntityTypeRightColumn;
+    static const QString CardinalityColumn;
+
     enum Cardinality {
         OneToOne,
         OneToMany,
@@ -39,6 +46,7 @@ public:
 private:
     friend class StoragePrivate;
     friend class RelationValueRightPrivate;
+    friend class EntityTypePrivate;
 
     explicit Relation(Row *row, Storage *parent);
 
