@@ -16,12 +16,14 @@ class Relation : public Property
 {
     Q_OBJECT
 public:
+    //! \cond PRIVATE
     static const QString NameColumn;
     static const QString DisplayNameLeftColumn;
     static const QString DisplayNameRightColumn;
     static const QString EntityTypeLeftColumn;
     static const QString EntityTypeRightColumn;
     static const QString CardinalityColumn;
+    //! \endcond
 
     enum Cardinality {
         OneToOne,
@@ -39,9 +41,6 @@ public:
     EntityType *entityTypeLeft() const;
     EntityType *entityTypeRight() const;
     Cardinality cardinality() const;
-
-    Table *relationTable() const;
-    bool isEditable();
 
 private:
     friend class StoragePrivate;

@@ -20,7 +20,9 @@ class Entity : public QObject
 {
     Q_OBJECT
 public:
+    //! \cond PRIVATE
     static const QString EntityTypeIdColumn;
+    //! \endcond
 
     ~Entity();
 

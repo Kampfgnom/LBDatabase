@@ -19,18 +19,20 @@ namespace LBDatabase {
 /******************************************************************************
 ** EntityTypePrivate
 */
+//! \cond PRIVATE
 const QString EntityType::ContextColumn("contextId");
 const QString EntityType::NameColumn("name");
 const QString EntityType::ParentEntityTypeIdColumn("parentEntityTypeId");
+//! \endcond
 
 class EntityTypePrivate {
     EntityTypePrivate() : context(0), parentEntityType(0) {}
 
-    static QString typeToSql(EntityType::Type type);
+    static QString typeToSql(Attribute::Type type);
 
     void init();
     void addInheritedProperties(EntityType *parent);
-    Attribute *addAttribute(const QString &name, EntityType::Type type);
+    Attribute *addAttribute(const QString &name, Attribute::Type type);
     Relation *addRelation(const QString &name, EntityType *otherType, Relation::Cardinality cardinality);
 
     Row *row;
@@ -47,20 +49,22 @@ class EntityTypePrivate {
     QList<Relation *> relations;
     QList<Entity *> entities;
 
+    QObject *controller;
+
     EntityType * q_ptr;
     Q_DECLARE_PUBLIC(EntityType)
 };
 
-QString EntityTypePrivate::typeToSql(EntityType::Type type)
+QString EntityTypePrivate::typeToSql(Attribute::Type type)
 {
     switch(type) {
-    case EntityType::Text:
+    case Attribute::Text:
         return Column::typeToName(Column::Text);
-    case EntityType::Integer:
+    case Attribute::Integer:
         return Column::typeToName(Column::Integer);
-    case EntityType::Real:
+    case Attribute::Real:
         return Column::typeToName(Column::Real);
-    case EntityType::Unkown:
+    case Attribute::Unkown:
     default:
         return Column::typeToName(Column::Blob);
     }
@@ -102,7 +106,7 @@ void EntityTypePrivate::addInheritedProperties(EntityType *parent)
     }
 }
 
-Attribute *EntityTypePrivate::addAttribute(const QString &name, EntityType::Type type)
+Attribute *EntityTypePrivate::addAttribute(const QString &name, Attribute::Type type)
 {
     Table *contextTable = storage->database()->table(context->name());
     contextTable->addColumn(name, EntityTypePrivate::typeToSql(type));
@@ -157,6 +161,30 @@ Relation *EntityTypePrivate::addRelation(const QString &name, EntityType *otherT
 /******************************************************************************
 ** EntityType
 */
+/*!
+  \class EntityType
+  \brief The EntityType class represents a description of a type of entities.
+
+  \ingroup highlevel-database-classes
+
+  \todo Dokument
+  */
+
+/*!
+  \var EntityType::d_ptr
+  \internal
+  */
+
+/*!
+  \fn EntityType::nameChanged(QString name)
+
+  This signal is emitted, when the name of the entity type changes.
+  */
+
+/*!
+  Creates a new entity type, which represents the type described in \a row in
+  the Storage \a parent.
+  */
 EntityType::EntityType(Row *row, Storage *parent) :
     QObject(parent),
     d_ptr(new EntityTypePrivate)
@@ -168,22 +196,34 @@ EntityType::EntityType(Row *row, Storage *parent) :
     d->init();
 }
 
+/*!
+  Destroys the type.
+  */
 EntityType::~EntityType()
 {
 }
 
+/*!
+  Returns the storage-global id of the type.
+  */
 int EntityType::id() const
 {
     Q_D(const EntityType);
     return d->row->id();
 }
 
+/*!
+  Returns the name of the type.
+  */
 QString EntityType::name() const
 {
     Q_D(const EntityType);
     return d->name;
 }
 
+/*!
+  Sets the name of the type to \a name.
+  */
 void EntityType::setName(const QString &name)
 {
     Q_D(EntityType);
@@ -195,18 +235,30 @@ void EntityType::setName(const QString &name)
     emit nameChanged(name);
 }
 
+/*!
+  Returns the context to which the type belongs.
+  */
 LBDatabase::Context *EntityType::context() const
 {
     Q_D(const EntityType);
     return d->context;
 }
 
+/*!
+  Returns the type, from which this type inherits its properties or \a 0 if this
+  type is the base type of its Context.
+  */
 EntityType *EntityType::parentEntityType() const
 {
     Q_D(const EntityType);
     return d->parentEntityType;
 }
 
+/*!
+  \internal
+
+  Sets the Context to \a context. This is done when loading the storage.
+  */
 void EntityType::setContext(LBDatabase::Context *context)
 {
     Q_D(EntityType);
@@ -215,6 +267,11 @@ void EntityType::setContext(LBDatabase::Context *context)
     d->context = context;
 }
 
+/*!
+  \internal
+
+  Adds a type, which inherits this type. This is done when loading the storage.
+  */
 void EntityType::addChildEntityType(EntityType *type)
 {
     Q_D(EntityType);
@@ -224,6 +281,12 @@ void EntityType::addChildEntityType(EntityType *type)
     d->childEntityTypes.append(type);
 }
 
+/*!
+  \internal
+
+  Sets the type from which this type inherits its properties. This is done when
+  loading the storage.
+  */
 void EntityType::setParentEntityType(EntityType *type)
 {
     Q_D(EntityType);
@@ -232,54 +295,88 @@ void EntityType::setParentEntityType(EntityType *type)
     d->parentEntityType = type;
 }
 
+/*!
+  \internal
+
+  Returns the ID of the parent type. This is used when loading the storage.
+  */
 int EntityType::parentEntityTypeId() const
 {
     Q_D(const EntityType);
     return d->parentEntityTypeId;
 }
 
+/*!
+  Returns the list of types, which are derived from the type.
+  */
 QList<EntityType *> EntityType::childEntityTypes() const
 {
     Q_D(const EntityType);
     return d->childEntityTypes;
 }
 
+/*!
+  Returns the list of properties of the type.
+
+  This includes all attributes and relations.
+  */
 QList<Property *> EntityType::properties() const
 {
     Q_D(const EntityType);
     return d->properties;
 }
 
+/*!
+  Returns the list of attributes of the type.
+  */
 QList<Attribute *> EntityType::attributes() const
 {
     Q_D(const EntityType);
     return d->attributes;
 }
 
+/*!
+  Returns the list of relations of the type.
+  */
 QList<Relation *> EntityType::relations() const
 {
     Q_D(const EntityType);
     return d->relations;
 }
 
-Attribute *EntityType::addAttribute(const QString &name, Type type)
+/*!
+  Adds a new attribute with the name \a name and the type \a type to the type.
+  */
+Attribute *EntityType::addAttribute(const QString &name, Attribute::Type type)
 {
     Q_D(EntityType);
     return d->addAttribute(name, type);
 }
 
+/*!
+  Adds a new relation with the name \a name, which will map to entities of type
+  \a otherType and has the cardinality \a cardinality.
+  */
 Relation *EntityType::addRelation(const QString &name, EntityType *otherType, Relation::Cardinality cardinality)
 {
     Q_D(EntityType);
     return d->addRelation(name, otherType, cardinality);
 }
 
+/*!
+  Returns a list of all entites of the type. This includes all entities of
+  types, which inherit this type.
+  */
 QList<Entity *> EntityType::entities() const
 {
     Q_D(const EntityType);
     return d->entities;
 }
 
+/*!
+  Returns true, if the given \a entityType inherits or is equal to this type.
+  This means, that the given type has at least the properties of this type.
+  */
 bool EntityType::inherits(EntityType *entityType) const
 {
     Q_D(const EntityType);
@@ -293,14 +390,11 @@ bool EntityType::inherits(EntityType *entityType) const
     return d->parentEntityType->inherits(entityType);
 }
 
-void EntityType::setParentEntityTypeId(int id)
-{
-    Q_D(EntityType);
-    if(d->parentEntityTypeId == id)
-        return;
-    d->parentEntityTypeId = id;
-}
+/*!
+  \internal
 
+  Adds \a attribute to the attributes of this type. This is used when loading the storage.
+  */
 void EntityType::addAttribute(Attribute *attribute)
 {
     Q_D(EntityType);
@@ -308,6 +402,11 @@ void EntityType::addAttribute(Attribute *attribute)
     d->attributes.append(attribute);
 }
 
+/*!
+  \internal
+
+  Adds \a relation to the relations of this type. This is used when loading the storage.
+  */
 void EntityType::addRelation(Relation *relation)
 {
     Q_D(EntityType);
@@ -315,12 +414,23 @@ void EntityType::addRelation(Relation *relation)
     d->relations.append(relation);
 }
 
+/*!
+  \internal
+
+  Adds the properties of \a parent to this entity.
+  */
 void EntityType::addInheritedProperties(EntityType *parent)
 {
     Q_D(EntityType);
     d->addInheritedProperties(parent);
 }
 
+/*!
+  \internal
+
+  Adds \a entity to the list of all entities of this type and each type it is
+  derived from.
+  */
 void EntityType::addEntity(Entity *entity)
 {
     Q_D(EntityType);

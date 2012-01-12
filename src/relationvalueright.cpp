@@ -47,23 +47,47 @@ void RelationValueRightPrivate::fetchValue()
 }
 
 /******************************************************************************
-** RelationInverseValue
+** RelationValueRight
 */
+/*!
+  \class RelationValueRight
+  \brief The RelationValueRight represents the right part of a relation.
+
+  \ingroup highlevel-database-classes
+
+  \todo Dokument
+  */
+
+/*!
+  Creates a RelationValue.
+  */
 RelationValueRight::RelationValueRight(Relation *relation, Entity *parent) :
     RelationValue(*new RelationValueRightPrivate, relation, parent)
 {
 }
 
+/*!
+  Destroys the relation value.
+  */
 RelationValueRight::~RelationValueRight()
 {
 }
 
+/*!
+  Does nothing.
+  */
 bool RelationValueRight::setData(const QVariant &data)
 {
     Q_UNUSED(data);
     return false;
 }
 
+/*!
+  Returns a QVariant, which represents the content of the relation in the given
+  role.
+
+  Currently this method supports only the Qt::DisplayRole.
+  */
 QVariant RelationValueRight::data(int role) const
 {
     Q_UNUSED(role);
@@ -78,6 +102,15 @@ QVariant RelationValueRight::data(int role) const
     return QVariant::fromValue<QString>(QString::number(d->otherEntities.size())+QLatin1String(" ")+d->relation->entityTypeLeft()->name()+QLatin1String("s"));
 }
 
+/*!
+  Fetches the value of this relation value.
+
+  If the cardinality is N:M it calls Relation::initializeManyToManyRelation(),
+  which populates both the left and right values.
+
+  If the cardinality is 1:n or 1:1 this RelationValue right fetches its content
+  and registers with the left value.
+  */
 void RelationValueRight::fetchValue()
 {
     Q_D(RelationValueRight);

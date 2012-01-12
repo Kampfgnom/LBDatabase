@@ -3,6 +3,7 @@
 
 #include <QObject>
 
+#include "attribute.h"
 #include "relation.h"
 
 namespace LBDatabase {
@@ -19,16 +20,11 @@ class EntityType : public QObject
 {
     Q_OBJECT
 public:
+    //! \cond PRIVATE
     static const QString ContextColumn;
     static const QString NameColumn;
     static const QString ParentEntityTypeIdColumn;
-
-    enum Type {
-        Unkown,
-        Text,
-        Integer,
-        Real
-    };
+    //! \endcond
 
     ~EntityType();
 
@@ -45,7 +41,7 @@ public:
     QList<Attribute *> attributes() const;
     QList<Relation *> relations() const;
 
-    Attribute *addAttribute(const QString &name, Type type);
+    Attribute *addAttribute(const QString &name, Attribute::Type type);
     Relation *addRelation(const QString &name, EntityType *otherType, Relation::Cardinality cardinality);
 
     QList<Entity *> entities() const;
@@ -67,7 +63,6 @@ private:
     void setContext(Context *context);
     void addChildEntityType(EntityType *type);
     void setParentEntityType(EntityType *type);
-    void setParentEntityTypeId(int id);
     void addAttribute(Attribute *attribute);
     void addRelation(Relation *relation);
     void addInheritedProperties(EntityType *parent);

@@ -52,6 +52,11 @@ void AttributeValuePrivate::fetchValue()
   */
 
 /*!
+  \var AttributeValue::d_ptr
+  \internal
+  */
+
+/*!
   Creates an AttributeValue instance, which represents a conrete property with
   the Attribute description \a attribute of the Entity \a parent.
   */

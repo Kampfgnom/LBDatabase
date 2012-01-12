@@ -19,7 +19,9 @@ class Context : public QAbstractTableModel
 {
     Q_OBJECT
 public:
+    //! \cond PRIVATE
     static const QString NameColumn;
+    //! \endcond
 
     ~Context();
 
@@ -67,8 +69,6 @@ private:
 
     void initializeEntityHierarchy();
     void loadEntities();
-    void initializeRelations();
-    void fillRelations();
 
     QScopedPointer<ContextPrivate> d_ptr;
     Q_DECLARE_PRIVATE(Context)

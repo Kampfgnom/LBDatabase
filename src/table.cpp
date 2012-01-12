@@ -579,6 +579,11 @@ Qt::ItemFlags Table::flags(const QModelIndex &index) const
     return QAbstractItemModel::flags(index);
 }
 
+/*!
+  \internal
+
+  Listens for changes of data in the table and emits dataChanged() accordingly.
+  */
 void Table::onRowDataChanged(int column, QVariant data)
 {
     Q_D(const Table);

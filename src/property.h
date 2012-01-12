@@ -8,6 +8,8 @@ namespace LBDatabase {
 class Context;
 class Entity;
 
+
+//! \cond PRIVATE
 class Property : public QObject
 {
     Q_OBJECT
@@ -28,6 +30,7 @@ private:
     virtual void addPropertyValueToEntities() = 0;
     virtual void addPropertyValue(Entity *entity) = 0;
 };
+//! \endcond
 
 } // namespace LBDatabase
 

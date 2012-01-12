@@ -23,6 +23,13 @@ public:
         PrefetchOnStartup
     };
 
+    enum Type {
+        Unkown,
+        Text,
+        Integer,
+        Real
+    };
+
     ~Attribute();
 
     int id() const;

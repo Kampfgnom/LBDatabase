@@ -27,6 +27,7 @@ public:
 
     bool open();
     bool refreshConnection();
+    void close();
 
     bool isDirty() const;
 

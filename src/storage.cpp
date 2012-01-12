@@ -41,7 +41,7 @@ class StoragePrivate {
 
     Table *attributesTable;
     Table *contextsTable;
-    Table *entitiesTable;
+    Table *entityTypesTable;
     Table *metaDataTable;
     Table *relationsTable;
 
@@ -89,8 +89,8 @@ bool StoragePrivate::open()
     if(!contextsTable)
         return false;
 
-    entitiesTable = database->table(EntitiesTableName);
-    if(!entitiesTable)
+    entityTypesTable = database->table(EntitiesTableName);
+    if(!entityTypesTable)
         return false;
 
     attributesTable = database->table(AttributesTableName);
@@ -105,7 +105,7 @@ bool StoragePrivate::open()
     name = metaDataRow->data(NameColumn).toString();
 
     contexts.reserve(contextsTable->rows().size());
-    entityTypes.reserve(entitiesTable->rows().size());
+    entityTypes.reserve(entityTypesTable->rows().size());
     attributes.reserve(attributesTable->rows().size());
     properties.reserve(attributesTable->rows().size() + relationsTable->rows().size());
 
@@ -114,7 +114,7 @@ bool StoragePrivate::open()
         contexts.insert(row->id(), context);
     }
 
-    foreach(Row *row, entitiesTable->rows()) {
+    foreach(Row *row, entityTypesTable->rows()) {
         q->insertEntityType(new EntityType(row, q));
     }
 
@@ -164,6 +164,34 @@ Context *StoragePrivate::addContext(const QString &name, const QString &baseEnti
 /******************************************************************************
 ** Storage
 */
+/*!
+  \class Storage
+  \brief The Storage class represents a high level storage for entities.
+
+  \ingroup highlevel-database-classes
+
+  \todo Dokument
+  */
+
+/*!
+  \var Storage::d_ptr
+  \internal
+  */
+
+/*!
+  \fn Storage::nameChanged()
+
+  This signal is emitted when the name of this storage changes.
+
+  */
+
+/*!
+  Returns a storage instance, which holds the data contained in the storage file
+  \a fileName.
+
+  This will return exactly one instance per file, i.e. you can open each file
+  only exactly once.
+  */
 Storage *Storage::instance(const QString &fileName)
 {
     static QMutex mutex(QMutex::Recursive);
@@ -180,22 +208,36 @@ Storage *Storage::instance(const QString &fileName)
     return storage;
 }
 
+/*!
+  Closes the storage.
+  */
 Storage::~Storage()
 {
 }
 
+/*!
+  Returns the database, on which the storage works. Note that changes to the
+  database are not automatically reflected in the storage.
+  */
 Database *Storage::database() const
 {
     Q_D(const Storage);
     return d->database;
 }
 
+/*!
+  Returns the name of the storage.
+  */
 QString Storage::name() const
 {
     Q_D(const Storage);
     return d->name;
 }
 
+/*!
+  Sets the name of the storage to \a name. Note that this name is not connected
+  to the file name, but is stored in the database itself.
+  */
 void Storage::setName(const QString &name)
 {
     Q_D(Storage);
@@ -207,6 +249,9 @@ void Storage::setName(const QString &name)
     emit nameChanged(name);
 }
 
+/*!
+  Creates a storage, which uses the database \a fileName.
+  */
 Storage::Storage(const QString &fileName, QObject *parent) :
     QObject(parent),
     d_ptr(new StoragePrivate)
@@ -217,42 +262,68 @@ Storage::Storage(const QString &fileName, QObject *parent) :
     d->init();
 }
 
+/*!
+  Returns the file name of the storage.
+  */
 QString Storage::fileName() const
 {
     Q_D(const Storage);
     return d->fileName;
 }
 
+/*!
+  Returns the EntityType with the ID \a id.
+  */
 EntityType *Storage::entityType(int id) const
 {
     Q_D(const Storage);
     return d->entityTypes.value(id, 0);
 }
 
+/*!
+  Returns the EntityType with the ID \a id.
+  */
 Context *Storage::context(int id) const
 {
     Q_D(const Storage);
     return d->contexts.value(id);
 }
 
+/*!
+  Returns a list of all contexts in this storage.
+  */
 QList<Context *> Storage::contexts() const
 {
     Q_D(const Storage);
     return d->contexts.values();
 }
 
+/*!
+  Creates a new context in the storage with the name \a name. It will
+  automatically create a base entity type for the context named \a
+  baseEntityTypeName, since each context has to have exactly one base entity
+  type.
+  */
 Context *Storage::addContext(const QString &name, const QString &baseEntityTypeName)
 {
     Q_D(Storage);
     return d->addContext(name, baseEntityTypeName);
 }
 
+/*!
+  Returns the Attribute with the ID \a id.
+  */
 Attribute *Storage::attribute(int id) const
 {
     Q_D(const Storage);
     return d->attributes.value(id, 0);
 }
 
+/*!
+  \internal
+
+  Inserts the entity type \a type into the storage-global list of types.
+  */
 void Storage::insertEntityType(EntityType *type)
 {
     Q_D(Storage);
@@ -262,6 +333,11 @@ void Storage::insertEntityType(EntityType *type)
     d->entityTypes.insert(type->id(), type);
 }
 
+/*!
+  \internal
+
+  Inserts the attribute \a attribute into the storage-global list of attributes.
+  */
 void Storage::insertAttribute(Attribute *attribute)
 {
     Q_D(Storage);
@@ -272,6 +348,11 @@ void Storage::insertAttribute(Attribute *attribute)
     d->properties.append(attribute);
 }
 
+/*!
+  \internal
+
+  Inserts the relation \a relation into the storage-global list of relations.
+  */
 void Storage::insertRelation(Relation *relation)
 {
     Q_D(Storage);
@@ -282,28 +363,51 @@ void Storage::insertRelation(Relation *relation)
     d->properties.append(relation);
 }
 
+/*!
+  Returns the table, which defines all contexts.
+  */
 Table *Storage::contextsTable() const
 {
     Q_D(const Storage);
     return d->contextsTable;
 }
 
-Table *Storage::entitiesTable() const
+/*!
+  Returns the table, which defines all entity types.
+  */
+Table *Storage::entityTypesTable() const
 {
     Q_D(const Storage);
-    return d->entitiesTable;
+    return d->entityTypesTable;
 }
 
+/*!
+  Returns the table, which defines all attributes.
+  */
 Table *Storage::attributesTable() const
 {
     Q_D(const Storage);
     return d->attributesTable;
 }
 
+/*!
+  Opens the storage.
+  Returns true upon success and false if something goes wrong (e.g. the file is
+  no correct storage).
+  */
 bool Storage::open()
 {
     Q_D(Storage);
     return d->open();
+}
+
+/*!
+  Returns a list of all entity types, that this storage may contain.
+  */
+QList<EntityType *> Storage::entityTypes() const
+{
+    Q_D(const Storage);
+    return d->entityTypes.values();
 }
 
 } // namespace LBDatabase

@@ -60,7 +60,7 @@ void AttributePrivate::addPropertyValue(Entity *entity)
 ** Attribute
 */
 /*!
-  \class Attribtue
+  \class Attribute
   \brief The Attribute class represents a simple single-value property of an
   EntityType.
 
@@ -71,14 +71,20 @@ void AttributePrivate::addPropertyValue(Entity *entity)
   */
 
 /*!
+  \var Attribute::d_ptr
+  \internal
+  */
+
+/*!
+  \enum Attribute::Type
+
+  This enumeration describes the type stored in the attribute.
+
+  */
+
+/*!
   \enum Attribute::PrefetchStrategy
   \brief Describes if and when the value of an attribute will be prefetched.
-
-  The possible values are:
-
-  \value PrefetchOnStartup The value will be cached, right when the storage is
-  being opened.
-
   */
 
 /*!

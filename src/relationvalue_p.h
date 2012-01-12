@@ -9,6 +9,7 @@ class Entity;
 class Relation;
 class RelationValue;
 
+//! \cond PRIVATE
 class RelationValuePrivate {
 protected:
     friend class RelationPrivate;
@@ -27,6 +28,7 @@ protected:
     RelationValue * q_ptr;
     Q_DECLARE_PUBLIC(RelationValue)
 };
+//! \endcond
 
 } // namespace LBDatabase
 

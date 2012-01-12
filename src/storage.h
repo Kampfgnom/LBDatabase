@@ -19,7 +19,6 @@ class Storage : public QObject
 {
     Q_OBJECT
 public:
-    static QList<Storage*> instances();
     static Storage *instance(const QString &fileName);
 
     ~Storage();
@@ -32,6 +31,7 @@ public:
     QString fileName() const;
 
     QList<Context *> contexts() const;
+    QList<EntityType *> entityTypes() const;
 
     Context *addContext(const QString &name, const QString &baseEntityTypeName);
 
@@ -56,7 +56,7 @@ private:
     void insertRelation(Relation *relation);
 
     Table *contextsTable() const;
-    Table *entitiesTable() const;
+    Table *entityTypesTable() const;
     Table *attributesTable() const;
 
     QScopedPointer<StoragePrivate> d_ptr;

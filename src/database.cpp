@@ -87,7 +87,6 @@ bool DatabasePrivate::openSqlDatabase()
   \brief The Database class represents a low-level SQLite database.
 
   \defgroup lowlevel-database-classes Low-Level Database Classes
-  \ingroup lowlevel-database-classes
 
   It is the starting point for opening and working with a SQLite file. You can
   only instantiate one Database per file, which is created by and afterwards
@@ -118,6 +117,14 @@ bool DatabasePrivate::openSqlDatabase()
   happen when calling refreshConnection().
 
   \sa isOpen()
+  */
+
+/*!
+  \fn void Database::dirtyChanged()
+
+  This signal is emitted when something in the database is being edited. This
+  means everything from changing names or content or adding column, tables, rows
+  etc.
   */
 
 /*!
@@ -173,8 +180,6 @@ Database::Database(const QString &fileName, QObject *parent) :
     QObject(parent),
     d_ptr(new DatabasePrivate)
 {
-    qDebug() << "Database::Database: Opening database file" << fileName;
-
     Q_D(Database);
     d->q_ptr = this;
     d->fileName = fileName;
@@ -185,8 +190,6 @@ Database::Database(const QString &fileName, QObject *parent) :
 */
 Database::~Database()
 {
-    Q_D(Database);
-    qDebug() << "Database::~Database: Closing database file" << d->fileName;
 }
 
 /*!
@@ -238,6 +241,7 @@ bool Database::open()
         d->open = d->openSqlDatabase();
     if(d->open && d->tables.isEmpty())
         d->createTableInstances();
+    setOpen(true);
     return d->open;
 }
 
@@ -252,6 +256,18 @@ bool Database::refreshConnection()
     setOpen(false);
     QSqlDatabase::removeDatabase(fileName());
     return open();
+}
+
+/*!
+  Closes the QSqlDatabase connection, sets open to false and emits closed().
+  */
+void Database::close()
+{
+    Q_D(Database);
+    if(!d->open)
+        return;
+    QSqlDatabase::removeDatabase(d->fileName);
+    setOpen(false);
 }
 
 /*!
@@ -349,8 +365,7 @@ QStringList Database::tableNames() const
 }
 
 /*!
-  \property Database::fileName
-  \brief The file which the database works on.
+  Returns the file which the database works on.
   */
 QString Database::fileName() const
 {

@@ -10,6 +10,7 @@ namespace LBDatabase {
 class Entity;
 class Property;
 
+//! \cond PRIVATE
 class PropertyValue : public QObject
 {
     Q_OBJECT
@@ -33,6 +34,7 @@ private:
 
     virtual void fetchValue() = 0;
 };
+//! \endcond
 
 } // namespace LBDatabase
 

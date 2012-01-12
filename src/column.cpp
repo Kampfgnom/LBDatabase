@@ -66,6 +66,14 @@ class ColumnPrivate {
 */
 
 /*!
+  \fn void Column::indexChanged()
+
+  This signals is emitted when the column's internal index changes.
+
+  \sa name
+*/
+
+/*!
   \var Column::d_ptr
   \internal
   */
